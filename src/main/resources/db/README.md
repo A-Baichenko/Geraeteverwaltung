@@ -6,7 +6,8 @@
   `V<Version>__<beschreibung>.sql`
 
 **Beispiel:**
-
+- V1__create_test.sql
+- v2__create_Alpha.sql
 ---
 
 ### 2. Änderungen definieren
