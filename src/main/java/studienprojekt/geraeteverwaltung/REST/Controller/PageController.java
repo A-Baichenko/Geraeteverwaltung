@@ -2,12 +2,16 @@ package studienprojekt.geraeteverwaltung.REST.Controller;
 
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.http.HttpServletRequest;
+import java.util.EnumSet;
+import java.util.List;
 import java.util.Map;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import studienprojekt.geraeteverwaltung.REST.Controller.htmlstrings.*;
 import studienprojekt.geraeteverwaltung.REST.Service.JwtService;
 import studienprojekt.geraeteverwaltung.mitarbeiterverwalten.DBaccess.DBaccess_AppUserverwaltung;
 import studienprojekt.geraeteverwaltung.mitarbeiterverwalten.DBaccess.entity.AppUser;
@@ -17,6 +21,15 @@ import studienprojekt.geraeteverwaltung.mitarbeiterverwalten.DBaccess.entity.Rol
 @RequestMapping("/api/page")
 public class PageController {
 
+    private static final List<String> TAB_ORDER = List.of(
+            "home",
+            "reservierung-ausleihe",
+            "geraeteverwaltung",
+            "mitarbeiterverwaltung",
+            "raumverwaltung",
+            "placeholder"
+    );
+
     private final DBaccess_AppUserverwaltung dbaccessAppUserverwaltung;
     private final JwtService jwtService;
 
@@ -25,11 +38,46 @@ public class PageController {
         this.jwtService = jwtService;
     }
 
-    @GetMapping("/home-content")
-    public ResponseEntity<?> getHomeContent(HttpServletRequest request) {
+    @GetMapping("/tab-config")
+    public ResponseEntity<?> getTabConfiguration(HttpServletRequest request) {
+        AppUser user = authenticatedUser(request);
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Nicht autorisiert"));
+        }
+
+        List<String> allowedTabs = TAB_ORDER.stream()
+                .filter(tab -> isTabAllowedForRole(tab, user.getRole()))
+                .toList();
+
+        return ResponseEntity.ok(Map.of(
+                "role", user.getRole().name(),
+                "tabOrder", TAB_ORDER,
+                "allowedTabs", allowedTabs
+        ));
+    }
+
+    @GetMapping("/content/{tabKey}")
+    public ResponseEntity<?> getTabContent(@PathVariable String tabKey, HttpServletRequest request) {
+        AppUser user = authenticatedUser(request);
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Nicht autorisiert"));
+        }
+
+        if (!TAB_ORDER.contains(tabKey) || "placeholder".equals(tabKey)) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "Tab nicht gefunden"));
+        }
+
+        if (!isTabAllowedForRole(tabKey, user.getRole())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "Keine Berechtigung für diesen Tab"));
+        }
+
+        return ResponseEntity.ok(Map.of("html", htmlForTab(tabKey)));
+    }
+
+    private AppUser authenticatedUser(HttpServletRequest request) {
         String authHeader = request.getHeader("Authorization");
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Token fehlt"));
+            return null;
         }
 
         String token = authHeader.substring(7);
@@ -37,51 +85,64 @@ public class PageController {
         try {
             claims = jwtService.parseToken(token);
         } catch (IllegalArgumentException ex) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Token ungültig"));
+            return null;
         }
-
-        String username = claims.getSubject();
-        AppUser user = dbaccessAppUserverwaltung.sucheNachUsername(username);
-        if (user == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Benutzer nicht gefunden"));
-        }
-
-        if (user.getRole() != Role.ADMIN) {
-            return ResponseEntity.ok(Map.of("html", "<div class=\"placeholder\">Kein Home-Board für diese Rolle.</div>"));
-        }
-
-        return ResponseEntity.ok(Map.of("html", adminHomeHtml()));
+        return dbaccessAppUserverwaltung.sucheNachUsername(claims.getSubject());
     }
 
-    private String adminHomeHtml() {
-        return """
-                <div class="board">\s
-                    <article class="column">\s
-                        <h2>Verfügbar</h2>
-                        <input type="search" placeholder="Suche" aria-label="Suche Verfügbar">\s
-                        <div class="card-item">Kategorie <span>Anz.</span></div>
-                    </article>
-                    <article class="column">\s
-                        <h2>Reserviert</h2>
-                        <input type="search" placeholder="Suche" aria-label="Suche Reserviert">\s
-                        <div class="card-item">Gerätetyp <span>Anz.</span></div>
-                    </article>
-                    <article class="column">\s
-                        <h2>Ausgeliehen</h2>
-                        <input type="search" placeholder="Suche" aria-label="Suche Ausgeliehen">\s
-                        <div class="card-item">Daten <span>id</span></div>
-                    </article>
-                    <article class="column">\s
-                        <h2>Überfällig</h2>
-                        <input type="search" placeholder="Suche" aria-label="Suche Überfällig">\s
-                        <div class="card-item">Daten <span>id</span></div>
-                    </article>
-                    <article class="column">\s
-                        <h2>Nicht-Ausleihbar</h2>
-                        <input type="search" placeholder="Suche" aria-label="Suche Nicht-Ausleihbar">\s
-                        <div class="card-item">Daten <span>id</span></div>
-                    </article>
-                </div>
-               \s""";
+    private boolean isTabAllowedForRole(String tabKey, Role role) {
+        return switch (role) {
+            case ADMIN -> true;
+            case GERAETE_VERWALTER -> EnumSet.of(
+                    Tab.HOME,
+                    Tab.RESERVIERUNG_AUSLEIHE,
+                    Tab.GERAETEVERWALTUNG
+            ).contains(Tab.fromKey(tabKey));
+            case RAUM_VERWALTER -> Tab.RAUMVERWALTUNG.matches(tabKey);
+            case PERSONEN_VERWALTER -> Tab.MITARBEITERVERWALTUNG.matches(tabKey);
+            case MITARBEITER -> EnumSet.of(
+                    Tab.HOME,
+                    Tab.RESERVIERUNG_AUSLEIHE
+            ).contains(Tab.fromKey(tabKey));
+        };
+    }
+
+    private String htmlForTab(String tabKey) {
+        return switch (Tab.fromKey(tabKey)) {
+            case HOME -> HomeHtml.content();
+            case RESERVIERUNG_AUSLEIHE -> ReservierungAusleiheHtml.content();
+            case GERAETEVERWALTUNG -> GeraeteverwaltungHtml.content();
+            case MITARBEITERVERWALTUNG -> MitarbeiterverwaltungHtml.content();
+            case RAUMVERWALTUNG -> RaumverwaltungHtml.content();
+            case PLACEHOLDER -> "";
+        };
+    }
+
+    private enum Tab {
+        HOME("home"),
+        RESERVIERUNG_AUSLEIHE("reservierung-ausleihe"),
+        GERAETEVERWALTUNG("geraeteverwaltung"),
+        MITARBEITERVERWALTUNG("mitarbeiterverwaltung"),
+        RAUMVERWALTUNG("raumverwaltung"),
+        PLACEHOLDER("placeholder");
+
+        private final String key;
+
+        Tab(String key) {
+            this.key = key;
+        }
+
+        boolean matches(String candidate) {
+            return key.equals(candidate);
+        }
+
+        static Tab fromKey(String tabKey) {
+            for (Tab value : values()) {
+                if (value.matches(tabKey)) {
+                    return value;
+                }
+            }
+            throw new IllegalArgumentException("Unbekannter Tab");
+        }
     }
 }

@@ -1,12 +1,16 @@
 const topNav = document.getElementById('topNav');
 const pageContent = document.getElementById('pageContent');
+
 const tabs = [
-    { key: 'home', label: 'Home' },
-    { key: 'p1', label: 'Platzhalter 1' },
-    { key: 'mitarbeiter', label: 'Mitarbeiter Verwalten' },
-    { key: 'p2', label: 'Platzhalter 2' },
-    { key: 'p3', label: 'Platzhalter 3' }
+    { key: 'home', label: 'Home (Übersicht)' },
+    { key: 'reservierung-ausleihe', label: 'Reservieren und Ausleihen' },
+    { key: 'geraeteverwaltung', label: 'Geräteverwaltung' },
+    { key: 'mitarbeiterverwaltung', label: 'Mitarbeiterverwaltung' },
+    { key: 'raumverwaltung', label: 'Raumverwaltung' },
+    { key: 'placeholder', label: '—' }
 ];
+
+let activeTabKey = null;
 
 function getToken() {
     return localStorage.getItem('authToken');
@@ -16,40 +20,40 @@ function redirectToLogin() {
     window.location.href = '/index.html';
 }
 
-async function getCurrentUser(token) {
-    const response = await fetch('/api/auth/me', {
+async function getTabConfig(token) {
+    const response = await fetch('/api/page/tab-config', {
         headers: {
             Authorization: `Bearer ${token}`
         }
     });
 
     if (!response.ok) {
-        throw new Error('Nicht eingeloggt');
+        throw new Error('Tab-Konfiguration konnte nicht geladen werden');
     }
 
     return response.json();
 }
 
-async function loadHomeHtml(role, token) {
-    const response = await fetch('/api/page/home-content', {
+async function loadTabHtml(tabKey, token) {
+    if (tabKey === 'placeholder') {
+        return '<div class="placeholder">Platzhalter für zukünftige Erweiterungen.</div>';
+    }
+
+    const response = await fetch(`/api/page/content/${tabKey}`, {
         headers: {
             Authorization: `Bearer ${token}`
         }
     });
 
     if (!response.ok) {
-        throw new Error('Home konnte nicht geladen werden');
+        throw new Error(`Inhalt für Tab ${tabKey} konnte nicht geladen werden`);
     }
 
     const data = await response.json();
-    if (role === 'ADMIN') {
-        return data.html;
-    }
-
-    return '<div class="placeholder">Mitarbeiter Ansicht: Inhalt folgt aus dem Backend.</div>';
+    return data.html;
 }
 
-function renderNav(role, activeKey) {
+function renderNav(allowedTabs, onTabSelected) {
     topNav.innerHTML = '';
 
     tabs.forEach((tab) => {
@@ -58,16 +62,46 @@ function renderNav(role, activeKey) {
         button.className = 'tab';
         button.textContent = tab.label;
 
-        if (tab.key === activeKey) {
+        const isAllowed = allowedTabs.includes(tab.key);
+        const isPlaceholder = tab.key === 'placeholder';
+
+        if (tab.key === activeTabKey) {
             button.classList.add('active');
         }
 
-        if (role === 'MITARBEITER' && tab.key !== 'mitarbeiter') {
+        if (!isAllowed || isPlaceholder) {
             button.classList.add('disabled');
+            button.disabled = true;
+        } else {
+            button.addEventListener('click', () => onTabSelected(tab.key));
         }
 
         topNav.appendChild(button);
     });
+}
+
+async function switchTab(tabKey, token, allowedTabs) {
+    if (!allowedTabs.includes(tabKey)) {
+        return;
+    }
+
+    activeTabKey = tabKey;
+    renderNav(allowedTabs, (nextTabKey) => switchTab(nextTabKey, token, allowedTabs));
+
+    try {
+        pageContent.innerHTML = await loadTabHtml(tabKey, token);
+    } catch (error) {
+        pageContent.innerHTML = '<div class="placeholder">Inhalte konnten nicht geladen werden.</div>';
+    }
+}
+
+function firstAllowedTab(allowedTabs) {
+    for (const tab of tabs) {
+        if (allowedTabs.includes(tab.key)) {
+            return tab.key;
+        }
+    }
+    return null;
 }
 
 async function init() {
@@ -78,18 +112,17 @@ async function init() {
     }
 
     try {
-        const user = await getCurrentUser(token);
-        const role = user.role;
-        const activeTab = role === 'MITARBEITER' ? 'mitarbeiter' : 'home';
-        renderNav(role, activeTab);
+        const config = await getTabConfig(token);
+        const allowedTabs = config.allowedTabs || [];
 
-        if (role === 'ADMIN') {
-            const html = await loadHomeHtml(role, token);
-            pageContent.innerHTML = html;
+        const initialTab = firstAllowedTab(allowedTabs);
+        if (!initialTab) {
+            pageContent.innerHTML = '<div class="placeholder">Keine freigeschalteten Tabs gefunden.</div>';
+            renderNav([], () => {});
             return;
         }
 
-        pageContent.innerHTML = '<div class="placeholder">Mitarbeiter Verwalten: Inhalte werden hier geladen.</div>';
+        await switchTab(initialTab, token, allowedTabs);
     } catch (error) {
         localStorage.removeItem('authToken');
         localStorage.removeItem('userRole');
