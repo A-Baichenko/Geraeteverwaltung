@@ -3,8 +3,41 @@
 <head>
     <meta charset="UTF-8">
     <title>Title</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    <link rel="stylesheet" href="/css/login.css">
 </head>
 <body>
+<div class="card">
+    <h1>Anmeldung</h1>
 
+    <form id="loginForm">
+        <div class="field">
+            <label for="username">Benutzername</label>
+            <input id="username" name="username" required>
+        </div>
+
+        <div class="field">
+            <label for="password">Passwort</label>
+            <input id="password" name="password" type="password" required>
+        </div>
+
+        <button type="submit">Einloggen</button>
+    </form>
+
+    <button id="logoutBtn" type="button">Logout</button>
+
+    <div id="status" class="status"></div>
+
+    <div id="profile" class="profile">
+        <p><strong>Benutzer:</strong> <span id="profileUsername"></span></p>
+        <p><strong>Rolle:</strong> <span id="profileRole"></span></p>
+        <p><strong>Personalnummer:</strong> <span id="profilePersonalNr"></span></p>
+        <p><strong>Name:</strong> <span id="profileName"></span></p>
+        <p><strong>Backend Nachricht:</strong> <span id="profileMessage"></span></p>
+    </div>
+</div>
+
+<script type="module" src="/js/login.js"></script>
 </body>
 </html>
