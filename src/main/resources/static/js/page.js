@@ -170,10 +170,7 @@ pageContent.addEventListener('click', async (event) => {
         await switchTab(activeTabKey, token, allowedTabKeys);
         return;
     }
-
-    if (target.id === 'btn-ausleihe-speichern') {
-        alert('Ausleihe speichern kommt als Nächstes.');
-    }
+    
 });
 
 async function init() {
