@@ -8,20 +8,20 @@ public final class ReservierungAusleiheHtml {
     public static String content() {
         return """
             <div class="page-wrapper">
-                <div class="board" style="display: flex; justify-content: center; gap: 2rem; border: none;">
-                    <div style="text-align: center;">
-                        <div class="card-item" id="btn-ausleihen" style="cursor: pointer;">
+                <div class="board reservation-board">
+                    <div class="menu-item-wrapper">
+                        <div class="card-item clickable-card" id="btn-ausleihen">
                             <b>Ausleihen</b>
                         </div>
                     </div>
 
-                    <div style="text-align: center;">
+                    <div class="menu-item-wrapper">
                         <div class="card-item">
                             <b>Reservieren</b>
                         </div>
                     </div>
 
-                    <div style="text-align: center;">
+                    <div class="menu-item-wrapper">
                         <div class="card-item">
                             <b>Fest ausleihen</b>
                         </div>

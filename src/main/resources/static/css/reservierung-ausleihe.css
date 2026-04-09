@@ -1,0 +1,127 @@
+.page-wrapper {
+    width: 100%;
+}
+
+.reservation-board {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    border: none;
+}
+
+.menu-item-wrapper {
+    text-align: center;
+}
+
+.clickable-card {
+    cursor: pointer;
+}
+
+.form-page {
+    display: flex;
+    justify-content: center;
+    padding: 2rem;
+}
+
+.form-card {
+    width: 700px;
+    padding: 2rem;
+}
+
+.page-title {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.form-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.form-label {
+    display: block;
+    margin-bottom: 0.4rem;
+}
+
+.form-input {
+    width: 100%;
+    padding: 0.65rem;
+    box-sizing: border-box;
+}
+
+.clickable-input {
+    cursor: pointer;
+}
+
+.button-row {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.search-page {
+    display: flex;
+    justify-content: center;
+}
+
+.search-card-small {
+    width: 700px;
+    padding: 2rem;
+}
+
+.search-card-large {
+    width: 900px;
+    padding: 2rem;
+}
+
+.search-title {
+    text-align: center;
+    margin-bottom: 1.5rem;
+}
+
+.search-bar {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.search-input {
+    flex: 1;
+    padding: 0.5rem;
+    box-sizing: border-box;
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.data-table thead tr {
+    background: #f0f0f0;
+}
+
+.data-table th,
+.data-table td {
+    padding: 0.5rem;
+    border: 1px solid #ccc;
+}
+
+.table-empty-cell {
+    text-align: center;
+    padding: 1rem;
+}
+
+.table-select-row {
+    cursor: pointer;
+}
+
+.table-select-row:hover {
+    background-color: #f7f7f7;
+}
+
+.center-actions {
+    margin-top: 2rem;
+    text-align: center;
+}

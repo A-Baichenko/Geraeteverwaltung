@@ -7,7 +7,7 @@ let selectedRaumName = '';
 let selectedGeraetName = '';
 
 async function ladeCurrentMitarbeiter(token) {
-    const response = await fetch('/api/reservierung-ausleihe/current-mitarbeiter', {
+    const response = await fetch('/api/auth/me', {
         headers: {
             Authorization: `Bearer ${token}`
         }
@@ -23,21 +23,18 @@ async function ladeCurrentMitarbeiter(token) {
 async function setzeCurrentMitarbeiter(token) {
     const mitarbeiterInput = document.getElementById('mitarbeiter');
     if (!mitarbeiterInput) {
-        console.log('mitarbeiterInput nicht gefunden');
         return;
     }
 
     const data = await ladeCurrentMitarbeiter(token);
-    console.log('current-mitarbeiter response:', data);
-
     if (!data) {
         mitarbeiterInput.value = '';
         return;
     }
 
     selectedPersonalNr = data.personalNr;
-    selectedMitarbeiterName = data.anzeigeName;
-    mitarbeiterInput.value = data.anzeigeName;
+    selectedMitarbeiterName = data.mitarbeiterName;
+    mitarbeiterInput.value = data.mitarbeiterName;
 }
 
 async function sucheRaeume(suchbegriff, token) {
@@ -85,7 +82,7 @@ function renderRaumTabelle(raeume) {
     if (!raeume || raeume.length === 0) {
         tableBody.innerHTML = `
             <tr>
-                <td colspan="2" style="text-align:center; padding:1rem;">
+                <td colspan="2" class="table-empty-cell">
                     Keine Räume gefunden
                 </td>
             </tr>
@@ -95,13 +92,12 @@ function renderRaumTabelle(raeume) {
 
     tableBody.innerHTML = raeume.map((raum) => `
         <tr
-            class="select-raum-row"
+            class="select-raum-row table-select-row"
             data-raum-nr="${raum.raumNr}"
             data-raum-name="${raum.anzeigeName}"
-            style="cursor:pointer;"
         >
-            <td style="padding:0.5rem; border:1px solid #ccc;">${raum.raumNr}</td>
-            <td style="padding:0.5rem; border:1px solid #ccc;">${raum.gebaeude}</td>
+            <td>${raum.raumNr}</td>
+            <td>${raum.gebaeude}</td>
         </tr>
     `).join('');
 }
@@ -115,7 +111,7 @@ function renderGeraetTabelle(geraete) {
     if (!geraete || geraete.length === 0) {
         tableBody.innerHTML = `
             <tr>
-                <td colspan="3" style="text-align:center; padding:1rem;">
+                <td colspan="3" class="table-empty-cell">
                     Keine Geräte gefunden
                 </td>
             </tr>
@@ -125,14 +121,13 @@ function renderGeraetTabelle(geraete) {
 
     tableBody.innerHTML = geraete.map((geraet) => `
         <tr
-            class="select-geraet-row"
+            class="select-geraet-row table-select-row"
             data-geraetetyp-id="${geraet.id}"
             data-geraet-name="${geraet.anzeigeName}"
-            style="cursor:pointer;"
         >
-            <td style="padding:0.5rem; border:1px solid #ccc;">${geraet.hersteller}</td>
-            <td style="padding:0.5rem; border:1px solid #ccc;">${geraet.bezeichnung}</td>
-            <td style="padding:0.5rem; border:1px solid #ccc;">${geraet.kategorie ?? ''}</td>
+            <td>${geraet.hersteller}</td>
+            <td>${geraet.bezeichnung}</td>
+            <td>${geraet.kategorie ?? ''}</td>
         </tr>
     `).join('');
 }
