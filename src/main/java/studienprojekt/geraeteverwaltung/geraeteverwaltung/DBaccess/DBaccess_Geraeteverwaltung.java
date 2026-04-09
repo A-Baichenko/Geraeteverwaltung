@@ -80,4 +80,26 @@ public class DBaccess_Geraeteverwaltung {
 
         return list.isEmpty() ? null : list.get(0);
     }
+
+    @Transactional(readOnly = true)
+    public List<Geraetetyp> findeGeraetetypenNachFilter(String suchbegriff) {
+        if (suchbegriff == null || suchbegriff.isBlank()) {
+            return em.createQuery(
+                            "SELECT g FROM Geraetetyp g JOIN FETCH g.kategorie ORDER BY g.hersteller, g.bezeichnung",
+                            Geraetetyp.class)
+                    .getResultList();
+        }
+
+        String filter = "%" + suchbegriff.toLowerCase() + "%";
+
+        return em.createQuery(
+                        "SELECT g FROM Geraetetyp g JOIN FETCH g.kategorie " +
+                                "WHERE LOWER(g.hersteller) LIKE :filter " +
+                                "OR LOWER(g.bezeichnung) LIKE :filter " +
+                                "OR LOWER(g.kategorie.bezeichnung) LIKE :filter " +
+                                "ORDER BY g.hersteller, g.bezeichnung",
+                        Geraetetyp.class)
+                .setParameter("filter", filter)
+                .getResultList();
+    }
 }

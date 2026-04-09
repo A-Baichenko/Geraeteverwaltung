@@ -1,3 +1,5 @@
+import { registerReservierungAusleiheHandlers } from './reservierung-ausleihe.js';
+
 const topNav = document.getElementById('topNav');
 const pageContent = document.getElementById('pageContent');
 
@@ -11,6 +13,9 @@ const tabs = [
 ];
 
 let activeTabKey = null;
+let currentSubView = 'menu';
+let currentAusleiheView = 'form';
+let allowedTabKeys = [];
 
 function getToken() {
     return localStorage.getItem('authToken');
@@ -39,7 +44,13 @@ async function loadTabHtml(tabKey, token) {
         return '<div class="placeholder">Platzhalter für zukünftige Erweiterungen.</div>';
     }
 
-    const response = await fetch(`/api/page/content/${tabKey}`, {
+    let url = `/api/page/content/${tabKey}`;
+
+    if (tabKey === 'reservierung-ausleihe') {
+        url += `?view=${currentSubView}&sub=${currentAusleiheView}`;
+    }
+
+    const response = await fetch(url, {
         headers: {
             Authorization: `Bearer ${token}`
         }
@@ -85,12 +96,18 @@ async function switchTab(tabKey, token, allowedTabs) {
         return;
     }
 
+    if (activeTabKey !== tabKey) {
+        currentSubView = 'menu';
+        currentAusleiheView = 'form';
+    }
+
     activeTabKey = tabKey;
     renderNav(allowedTabs, (nextTabKey) => switchTab(nextTabKey, token, allowedTabs));
 
     try {
         pageContent.innerHTML = await loadTabHtml(tabKey, token);
     } catch (error) {
+        console.error(error);
         pageContent.innerHTML = '<div class="placeholder">Inhalte konnten nicht geladen werden.</div>';
     }
 }
@@ -104,6 +121,61 @@ function firstAllowedTab(allowedTabs) {
     return null;
 }
 
+pageContent.addEventListener('click', async (event) => {
+    const target = event.target.closest(
+        '#btn-ausleihen, #back-to-reservierung-menu, #btn-ausleihe-speichern, #raum, #geraet, #back-to-form'
+    );
+
+    if (!target) {
+        return;
+    }
+
+    const token = getToken();
+    if (!token) {
+        redirectToLogin();
+        return;
+    }
+
+    if (target.id === 'btn-ausleihen') {
+        currentSubView = 'ausleihe';
+        currentAusleiheView = 'form';
+        await switchTab(activeTabKey, token, allowedTabKeys);
+        return;
+    }
+
+    if (target.id === 'raum') {
+        currentSubView = 'ausleihe';
+        currentAusleiheView = 'raum';
+        await switchTab(activeTabKey, token, allowedTabKeys);
+        return;
+    }
+
+    if (target.id === 'geraet') {
+        currentSubView = 'ausleihe';
+        currentAusleiheView = 'geraet';
+        await switchTab(activeTabKey, token, allowedTabKeys);
+        return;
+    }
+
+    if (target.id === 'back-to-form') {
+        currentSubView = 'ausleihe';
+        currentAusleiheView = 'form';
+        await switchTab(activeTabKey, token, allowedTabKeys);
+        return;
+    }
+
+    if (target.id === 'back-to-reservierung-menu') {
+        currentSubView = 'menu';
+        currentAusleiheView = 'form';
+        await switchTab(activeTabKey, token, allowedTabKeys);
+        return;
+    }
+
+    if (target.id === 'btn-ausleihe-speichern') {
+        alert('Ausleihe speichern kommt als Nächstes.');
+    }
+});
+
 async function init() {
     const token = getToken();
     if (!token) {
@@ -113,21 +185,43 @@ async function init() {
 
     try {
         const config = await getTabConfig(token);
-        const allowedTabs = config.allowedTabs || [];
+        allowedTabKeys = config.allowedTabs || [];
 
-        const initialTab = firstAllowedTab(allowedTabs);
+        const initialTab = firstAllowedTab(allowedTabKeys);
         if (!initialTab) {
             pageContent.innerHTML = '<div class="placeholder">Keine freigeschalteten Tabs gefunden.</div>';
             renderNav([], () => {});
             return;
         }
 
-        await switchTab(initialTab, token, allowedTabs);
+        await switchTab(initialTab, token, allowedTabKeys);
     } catch (error) {
+        console.error(error);
         localStorage.removeItem('authToken');
         localStorage.removeItem('userRole');
         redirectToLogin();
     }
 }
+
+registerReservierungAusleiheHandlers({
+    pageContent,
+    getToken,
+    redirectToLogin,
+    getState: () => ({
+        activeTabKey,
+        currentSubView,
+        currentAusleiheView,
+        allowedTabKeys
+    }),
+    setState: ({ currentSubView: newSubView, currentAusleiheView: newAusleiheView }) => {
+        if (newSubView !== undefined) {
+            currentSubView = newSubView;
+        }
+        if (newAusleiheView !== undefined) {
+            currentAusleiheView = newAusleiheView;
+        }
+    },
+    switchTab
+});
 
 init();

@@ -10,8 +10,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import studienprojekt.geraeteverwaltung.REST.Controller.htmlstrings.*;
+import studienprojekt.geraeteverwaltung.REST.Controller.htmlstrings.reservierungausleihe.Ausleihe;
+import studienprojekt.geraeteverwaltung.REST.Controller.htmlstrings.reservierungausleihe.GeraetSucheHtml;
+import studienprojekt.geraeteverwaltung.REST.Controller.htmlstrings.reservierungausleihe.RaumSucheHtml;
 import studienprojekt.geraeteverwaltung.REST.Service.JwtService;
 import studienprojekt.geraeteverwaltung.mitarbeiterverwalten.DBaccess.DBaccess_AppUserverwaltung;
 import studienprojekt.geraeteverwaltung.mitarbeiterverwalten.DBaccess.entity.AppUser;
@@ -57,7 +61,12 @@ public class PageController {
     }
 
     @GetMapping("/content/{tabKey}")
-    public ResponseEntity<?> getTabContent(@PathVariable String tabKey, HttpServletRequest request) {
+    public ResponseEntity<?> getTabContent(
+            @PathVariable String tabKey,
+            @RequestParam(defaultValue = "menu") String view,
+            @RequestParam(defaultValue = "form") String sub,
+            HttpServletRequest request) {
+
         AppUser user = authenticatedUser(request);
         if (user == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Nicht autorisiert"));
@@ -71,7 +80,7 @@ public class PageController {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "Keine Berechtigung für diesen Tab"));
         }
 
-        return ResponseEntity.ok(Map.of("html", htmlForTab(tabKey)));
+        return ResponseEntity.ok(Map.of("html", htmlForTab(tabKey, view, sub)));
     }
 
     private AppUser authenticatedUser(HttpServletRequest request) {
@@ -107,15 +116,27 @@ public class PageController {
         };
     }
 
-    private String htmlForTab(String tabKey) {
+    private String htmlForTab(String tabKey, String view, String sub) {
         return switch (Tab.fromKey(tabKey)) {
             case HOME -> HomeHtml.content();
-            case RESERVIERUNG_AUSLEIHE -> ReservierungAusleiheHtml.content();
+            case RESERVIERUNG_AUSLEIHE -> htmlForReservierungAusleihe(view, sub);
             case GERAETEVERWALTUNG -> GeraeteverwaltungHtml.content();
             case MITARBEITERVERWALTUNG -> MitarbeiterverwaltungHtml.content();
             case RAUMVERWALTUNG -> RaumverwaltungHtml.content();
             case PLACEHOLDER -> "";
         };
+    }
+
+    private String htmlForReservierungAusleihe(String view, String sub) {
+        if ("ausleihe".equals(view)) {
+            return switch (sub) {
+                case "raum" -> RaumSucheHtml.content();
+                case "geraet" -> GeraetSucheHtml.content();
+                default -> Ausleihe.content();
+            };
+        }
+
+        return ReservierungAusleiheHtml.content();
     }
 
     private enum Tab {

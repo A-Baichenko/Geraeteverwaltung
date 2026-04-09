@@ -68,4 +68,30 @@ public class DBaccess_Raumverwaltung {
 
         return treffer.isEmpty() ? null : treffer.getFirst();
     }
+
+    @Transactional(readOnly = true)
+    public List<Raum> findeAlleRaeume() {
+        return entityManager.createQuery(
+                        "SELECT r FROM Raum r ORDER BY r.gebaeude, r.raumNr",
+                        Raum.class)
+                .getResultList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<Raum> findeRaeumeNachFilter(String suchbegriff) {
+        if (suchbegriff == null || suchbegriff.isBlank()) {
+            return findeAlleRaeume();
+        }
+
+        String filter = "%" + suchbegriff.toLowerCase() + "%";
+
+        return entityManager.createQuery(
+                        "SELECT r FROM Raum r " +
+                                "WHERE LOWER(r.gebaeude) LIKE :filter " +
+                                "OR STR(r.raumNr) LIKE :filter " +
+                                "ORDER BY r.gebaeude, r.raumNr",
+                        Raum.class)
+                .setParameter("filter", filter)
+                .getResultList();
+    }
 }
