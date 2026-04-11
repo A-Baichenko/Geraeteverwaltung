@@ -1,11 +1,11 @@
-import { registerReservierungAusleiheHandlers } from './reservierung-ausleihe.js';
+import { registerReservierungAusleiheHandlers } from './reservierung.js';
 
 const topNav = document.getElementById('topNav');
 const pageContent = document.getElementById('pageContent');
 
 const tabs = [
     { key: 'home', label: 'Home (Übersicht)' },
-    { key: 'reservierung-ausleihe', label: 'Reservieren' },
+    { key: 'reservierung', label: 'Reservieren' },
     { key: 'geraeteverwaltung', label: 'Geräteverwaltung' },
     { key: 'mitarbeiterverwaltung', label: 'Mitarbeiterverwaltung' },
     { key: 'raumverwaltung', label: 'Raumverwaltung' },
@@ -13,8 +13,6 @@ const tabs = [
 ];
 
 let activeTabKey = null;
-let currentSubView = 'menu';
-let currentAusleiheView = 'form';
 let allowedTabKeys = [];
 
 function getToken() {
@@ -44,11 +42,7 @@ async function loadTabHtml(tabKey, token) {
         return '<div class="placeholder">Platzhalter für zukünftige Erweiterungen.</div>';
     }
 
-    let url = `/api/page/content/${tabKey}`;
-
-    if (tabKey === 'reservierung-ausleihe') {
-        url += `?view=${currentSubView}&sub=${currentAusleiheView}`;
-    }
+    const url = `/api/page/content/${tabKey}`;
 
     const response = await fetch(url, {
         headers: {
@@ -94,11 +88,6 @@ function renderNav(allowedTabs, onTabSelected) {
 async function switchTab(tabKey, token, allowedTabs) {
     if (!allowedTabs.includes(tabKey)) {
         return;
-    }
-
-    if (activeTabKey !== tabKey) {
-        currentSubView = 'menu';
-        currentAusleiheView = 'form';
     }
 
     activeTabKey = tabKey;
@@ -154,8 +143,6 @@ registerReservierungAusleiheHandlers({
     redirectToLogin,
     getState: () => ({
         activeTabKey,
-        currentSubView,
-        currentAusleiheView,
         allowedTabKeys
     })
 });

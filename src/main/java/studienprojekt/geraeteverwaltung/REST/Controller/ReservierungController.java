@@ -16,15 +16,15 @@ import studienprojekt.geraeteverwaltung.mitarbeiterverwalten.DBaccess.DBaccess_A
 import studienprojekt.geraeteverwaltung.mitarbeiterverwalten.DBaccess.entity.AppUser;
 
 @RestController
-@RequestMapping("/api/reservierung-ausleihe")
-public class ReservierungAusleiheController {
+@RequestMapping("/api/reservierung")
+public class ReservierungController {
 
     private final DBaccess_Reservierungsverwaltung dbaccessReservierungsverwaltung;
     private final DBaccess_Geraeteverwaltung dbaccessGeraeteverwaltung;
     private final JwtService jwtService;
     private final DBaccess_AppUserverwaltung dbaccessAppUserverwaltung;
 
-    public ReservierungAusleiheController(
+    public ReservierungController(
             DBaccess_Reservierungsverwaltung dbaccessReservierungsverwaltung,
             DBaccess_Geraeteverwaltung dbaccessGeraeteverwaltung,
             JwtService jwtService,
