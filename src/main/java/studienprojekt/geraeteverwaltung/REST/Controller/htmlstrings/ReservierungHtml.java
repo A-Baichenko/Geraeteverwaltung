@@ -1,8 +1,8 @@
 package studienprojekt.geraeteverwaltung.REST.Controller.htmlstrings;
 
-public final class ReservierungAusleiheHtml {
+public final class ReservierungHtml {
 
-    private ReservierungAusleiheHtml() {
+    private ReservierungHtml() {
     }
 
     public static String content() {

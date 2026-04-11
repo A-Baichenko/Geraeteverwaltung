@@ -24,7 +24,7 @@ public class PageController {
 
     private static final List<String> TAB_ORDER = List.of(
             "home",
-            "reservierung-ausleihe",
+            "reservierung",
             "geraeteverwaltung",
             "mitarbeiterverwaltung",
             "raumverwaltung",
@@ -101,14 +101,14 @@ public class PageController {
             case ADMIN -> true;
             case GERAETE_VERWALTER -> EnumSet.of(
                     Tab.HOME,
-                    Tab.RESERVIERUNG_AUSLEIHE,
+                    Tab.RESERVIERUNG,
                     Tab.GERAETEVERWALTUNG
             ).contains(Tab.fromKey(tabKey));
             case RAUM_VERWALTER -> Tab.RAUMVERWALTUNG.matches(tabKey);
             case PERSONEN_VERWALTER -> Tab.MITARBEITERVERWALTUNG.matches(tabKey);
             case MITARBEITER -> EnumSet.of(
                     Tab.HOME,
-                    Tab.RESERVIERUNG_AUSLEIHE
+                    Tab.RESERVIERUNG
             ).contains(Tab.fromKey(tabKey));
         };
     }
@@ -116,7 +116,7 @@ public class PageController {
     private String htmlForTab(String tabKey, String view, String sub) {
         return switch (Tab.fromKey(tabKey)) {
             case HOME -> HomeHtml.content();
-            case RESERVIERUNG_AUSLEIHE -> ReservierungAusleiheHtml.content();
+            case RESERVIERUNG -> ReservierungHtml.content();
             case GERAETEVERWALTUNG -> GeraeteverwaltungHtml.content();
             case MITARBEITERVERWALTUNG -> MitarbeiterverwaltungHtml.content();
             case RAUMVERWALTUNG -> RaumverwaltungHtml.content();
@@ -126,7 +126,7 @@ public class PageController {
 
     private enum Tab {
         HOME("home"),
-        RESERVIERUNG_AUSLEIHE("reservierung-ausleihe"),
+        RESERVIERUNG("reservierung"),
         GERAETEVERWALTUNG("geraeteverwaltung"),
         MITARBEITERVERWALTUNG("mitarbeiterverwaltung"),
         RAUMVERWALTUNG("raumverwaltung"),

@@ -39,8 +39,8 @@ async function ladeCurrentMitarbeiter(token) {
 
 async function ladeGeraetetypen(token, suchbegriff = '') {
     const url = suchbegriff.trim()
-        ? `/api/reservierung-ausleihe/geraetetypen?suchbegriff=${encodeURIComponent(suchbegriff)}`
-        : '/api/reservierung-ausleihe/geraetetypen';
+        ? `/api/reservierung/geraetetypen?suchbegriff=${encodeURIComponent(suchbegriff)}`
+        : '/api/reservierung/geraetetypen';
 
     const response = await fetch(url, { headers: authHeaders(token) });
     if (!response.ok) {
@@ -50,7 +50,7 @@ async function ladeGeraetetypen(token, suchbegriff = '') {
 }
 
 async function ladeEigeneReservierungen(token) {
-    const response = await fetch('/api/reservierung-ausleihe/reservierungen/me', {
+    const response = await fetch('/api/reservierung/reservierungen/me', {
         headers: authHeaders(token)
     });
 
@@ -73,7 +73,7 @@ async function ladeNichtVerfuegbareZeitraeume(token) {
     endeDatum.setMonth(endeDatum.getMonth() + 12);
     const end = endeDatum.toISOString().slice(0, 10);
 
-    const url = new URL(`/api/reservierung-ausleihe/device-types/${state.form.geraetetypId}/unavailable-periods`, window.location.origin);
+    const url = new URL(`/api/reservierung/device-types/${state.form.geraetetypId}/unavailable-periods`, window.location.origin);
     url.searchParams.set('start', start);
     url.searchParams.set('end', end);
     if (state.form.reservierungsNr) {
@@ -220,8 +220,8 @@ async function speichereReservierung(token) {
 
     const istBearbeitung = Boolean(state.form.reservierungsNr);
     const url = istBearbeitung
-        ? `/api/reservierung-ausleihe/reservierungen/${state.form.reservierungsNr}`
-        : '/api/reservierung-ausleihe/reservierungen';
+        ? `/api/reservierung/reservierungen/${state.form.reservierungsNr}`
+        : '/api/reservierung/reservierungen';
 
     const response = await fetch(url, {
         method: istBearbeitung ? 'PUT' : 'POST',
@@ -249,7 +249,7 @@ async function loescheReservierung(token, reservierungsNr) {
         return;
     }
 
-    const response = await fetch(`/api/reservierung-ausleihe/reservierungen/${reservierungsNr}`, {
+    const response = await fetch(`/api/reservierung/reservierungen/${reservierungsNr}`, {
         method: 'DELETE',
         headers: authHeaders(token)
     });
@@ -440,7 +440,7 @@ export function registerReservierungAusleiheHandlers({
     });
 
     const observer = new MutationObserver(async () => {
-        const tabIstAktiv = getState().activeTabKey === 'reservierung-ausleihe';
+        const tabIstAktiv = getState().activeTabKey === 'reservierung';
         const reservierungsListe = document.getElementById('meine-reservierungen-liste');
         if (!tabIstAktiv || !reservierungsListe || reservierungsListe.dataset.initialized === 'true') {
             return;
