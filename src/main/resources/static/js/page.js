@@ -5,7 +5,7 @@ const pageContent = document.getElementById('pageContent');
 
 const tabs = [
     { key: 'home', label: 'Home (Übersicht)' },
-    { key: 'reservierung-ausleihe', label: 'Reservieren und Ausleihen' },
+    { key: 'reservierung-ausleihe', label: 'Reservieren' },
     { key: 'geraeteverwaltung', label: 'Geräteverwaltung' },
     { key: 'mitarbeiterverwaltung', label: 'Mitarbeiterverwaltung' },
     { key: 'raumverwaltung', label: 'Raumverwaltung' },
@@ -121,58 +121,6 @@ function firstAllowedTab(allowedTabs) {
     return null;
 }
 
-pageContent.addEventListener('click', async (event) => {
-    const target = event.target.closest(
-        '#btn-ausleihen, #back-to-reservierung-menu, #btn-ausleihe-speichern, #raum, #geraet, #back-to-form'
-    );
-
-    if (!target) {
-        return;
-    }
-
-    const token = getToken();
-    if (!token) {
-        redirectToLogin();
-        return;
-    }
-
-    if (target.id === 'btn-ausleihen') {
-        currentSubView = 'ausleihe';
-        currentAusleiheView = 'form';
-        await switchTab(activeTabKey, token, allowedTabKeys);
-        return;
-    }
-
-    if (target.id === 'raum') {
-        currentSubView = 'ausleihe';
-        currentAusleiheView = 'raum';
-        await switchTab(activeTabKey, token, allowedTabKeys);
-        return;
-    }
-
-    if (target.id === 'geraet') {
-        currentSubView = 'ausleihe';
-        currentAusleiheView = 'geraet';
-        await switchTab(activeTabKey, token, allowedTabKeys);
-        return;
-    }
-
-    if (target.id === 'back-to-form') {
-        currentSubView = 'ausleihe';
-        currentAusleiheView = 'form';
-        await switchTab(activeTabKey, token, allowedTabKeys);
-        return;
-    }
-
-    if (target.id === 'back-to-reservierung-menu') {
-        currentSubView = 'menu';
-        currentAusleiheView = 'form';
-        await switchTab(activeTabKey, token, allowedTabKeys);
-        return;
-    }
-    
-});
-
 async function init() {
     const token = getToken();
     if (!token) {
@@ -209,16 +157,7 @@ registerReservierungAusleiheHandlers({
         currentSubView,
         currentAusleiheView,
         allowedTabKeys
-    }),
-    setState: ({ currentSubView: newSubView, currentAusleiheView: newAusleiheView }) => {
-        if (newSubView !== undefined) {
-            currentSubView = newSubView;
-        }
-        if (newAusleiheView !== undefined) {
-            currentAusleiheView = newAusleiheView;
-        }
-    },
-    switchTab
+    })
 });
 
 init();

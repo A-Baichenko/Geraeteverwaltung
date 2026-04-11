@@ -1,222 +1,269 @@
-let selectedPersonalNr = null;
-let selectedRaumNr = null;
-let selectedGeraetetypId = null;
+const state = {
+    form: {
+        reservierungsNr: null,
+        personalNr: null,
+        mitarbeiterName: '',
+        geraetetypId: null,
+        geraetetypName: '',
+        ausleihdatum: '',
+        rueckgabedatum: ''
+    },
+    suche: {
+        suchbegriff: '',
+        ergebnisse: []
+    },
+    liste: {
+        reservierungen: []
+    }
+};
 
-let selectedMitarbeiterName = '';
-let selectedRaumName = '';
-let selectedGeraetName = '';
+function authHeaders(token) {
+    return {
+        Authorization: `Bearer ${token}`
+    };
+}
 
 async function ladeCurrentMitarbeiter(token) {
-    const response = await fetch('/api/auth/me', {
-        headers: {
-            Authorization: `Bearer ${token}`
-        }
-    });
-
+    const response = await fetch('/api/auth/me', { headers: authHeaders(token) });
     if (!response.ok) {
         return null;
     }
-
     return response.json();
 }
 
-async function setzeCurrentMitarbeiter(token) {
-    const mitarbeiterInput = document.getElementById('mitarbeiter');
-    if (!mitarbeiterInput) {
-        return;
-    }
+async function ladeGeraetetypen(token, suchbegriff = '') {
+    const url = suchbegriff.trim()
+        ? `/api/reservierung-ausleihe/geraetetypen?suchbegriff=${encodeURIComponent(suchbegriff)}`
+        : '/api/reservierung-ausleihe/geraetetypen';
 
-    const data = await ladeCurrentMitarbeiter(token);
-    if (!data) {
-        mitarbeiterInput.value = '';
-        return;
+    const response = await fetch(url, { headers: authHeaders(token) });
+    if (!response.ok) {
+        return [];
     }
-
-    selectedPersonalNr = data.personalNr;
-    selectedMitarbeiterName = data.mitarbeiterName;
-    mitarbeiterInput.value = data.mitarbeiterName;
+    return response.json();
 }
 
-async function sucheRaeume(suchbegriff, token) {
-    const url = suchbegriff && suchbegriff.trim()
-        ? `/api/reservierung-ausleihe/raeume?suchbegriff=${encodeURIComponent(suchbegriff)}`
-        : '/api/reservierung-ausleihe/raeume';
-
-    const response = await fetch(url, {
-        headers: {
-            Authorization: `Bearer ${token}`
-        }
+async function ladeEigeneReservierungen(token) {
+    const response = await fetch('/api/reservierung-ausleihe/reservierungen/me', {
+        headers: authHeaders(token)
     });
 
     if (!response.ok) {
         return [];
     }
-
     return response.json();
 }
 
-async function sucheGeraete(suchbegriff, token) {
-    const url = suchbegriff && suchbegriff.trim()
-        ? `/api/reservierung-ausleihe/geraete?suchbegriff=${encodeURIComponent(suchbegriff)}`
-        : '/api/reservierung-ausleihe/geraete';
-
-    const response = await fetch(url, {
-        headers: {
-            Authorization: `Bearer ${token}`
-        }
-    });
-
-    if (!response.ok) {
-        return [];
-    }
-
-    return response.json();
+function leseFormular() {
+    return {
+        ausleihdatum: document.getElementById('ausleihdatum')?.value || '',
+        rueckgabedatum: document.getElementById('rueckgabedatum')?.value || ''
+    };
 }
 
-function renderRaumTabelle(raeume) {
-    const tableBody = document.getElementById('raum-tabelle-body');
-    if (!tableBody) {
-        return;
-    }
-
-    if (!raeume || raeume.length === 0) {
-        tableBody.innerHTML = `
-            <tr>
-                <td colspan="2" class="table-empty-cell">
-                    Keine Räume gefunden
-                </td>
-            </tr>
-        `;
-        return;
-    }
-
-    tableBody.innerHTML = raeume.map((raum) => `
-        <tr
-            class="select-raum-row table-select-row"
-            data-raum-nr="${raum.raumNr}"
-            data-raum-name="${raum.anzeigeName}"
-        >
-            <td>${raum.raumNr}</td>
-            <td>${raum.gebaeude}</td>
-        </tr>
-    `).join('');
-}
-
-function renderGeraetTabelle(geraete) {
-    const tableBody = document.getElementById('geraet-tabelle-body');
-    if (!tableBody) {
-        return;
-    }
-
-    if (!geraete || geraete.length === 0) {
-        tableBody.innerHTML = `
-            <tr>
-                <td colspan="3" class="table-empty-cell">
-                    Keine Geräte gefunden
-                </td>
-            </tr>
-        `;
-        return;
-    }
-
-    tableBody.innerHTML = geraete.map((geraet) => `
-        <tr
-            class="select-geraet-row table-select-row"
-            data-geraetetyp-id="${geraet.id}"
-            data-geraet-name="${geraet.anzeigeName}"
-        >
-            <td>${geraet.hersteller}</td>
-            <td>${geraet.bezeichnung}</td>
-            <td>${geraet.kategorie ?? ''}</td>
-        </tr>
-    `).join('');
-}
-
-async function speichereAusleihe(token) {
+function schreibeFormular() {
     const mitarbeiterInput = document.getElementById('mitarbeiter');
+    const geraetetypInput = document.getElementById('geraetetyp');
     const ausleihdatumInput = document.getElementById('ausleihdatum');
     const rueckgabedatumInput = document.getElementById('rueckgabedatum');
+    const speichernButton = document.getElementById('btn-reservierung-speichern');
+    const abbrechenButton = document.getElementById('btn-reservierung-abbrechen');
 
-    const ausleihdatum = ausleihdatumInput?.value;
-    const rueckgabedatum = rueckgabedatumInput?.value;
+    if (mitarbeiterInput) mitarbeiterInput.value = state.form.mitarbeiterName;
+    if (geraetetypInput) geraetetypInput.value = state.form.geraetetypName;
+    if (ausleihdatumInput) ausleihdatumInput.value = state.form.ausleihdatum;
+    if (rueckgabedatumInput) rueckgabedatumInput.value = state.form.rueckgabedatum;
 
-    if (!mitarbeiterInput || !ausleihdatumInput || !rueckgabedatumInput) {
-        alert('Formular nicht vollständig geladen.');
+    if (speichernButton) {
+        speichernButton.textContent = state.form.reservierungsNr ? 'Reservierung aktualisieren' : 'Reservieren';
+    }
+
+    if (abbrechenButton) {
+        abbrechenButton.classList.toggle('hidden', !state.form.reservierungsNr);
+    }
+}
+
+function resetFormular() {
+    state.form.reservierungsNr = null;
+    state.form.geraetetypId = null;
+    state.form.geraetetypName = '';
+    state.form.ausleihdatum = '';
+    state.form.rueckgabedatum = '';
+    schreibeFormular();
+}
+
+function rendereGeraetetypListe() {
+    const list = document.getElementById('geraetetyp-liste');
+    if (!list) {
         return;
     }
 
-    if (!selectedPersonalNr) {
-        alert('Mitarbeiter konnte nicht automatisch erkannt werden.');
+    if (!state.suche.ergebnisse.length) {
+        list.innerHTML = '<li class="empty-list-item">Keine Gerätetypen gefunden.</li>';
         return;
     }
 
-    if (!selectedGeraetetypId) {
-        alert('Bitte zuerst ein Gerät auswählen.');
+    list.innerHTML = state.suche.ergebnisse.map((typ) => `
+        <li>
+            <button
+                type="button"
+                class="list-item-button ${state.form.geraetetypId === typ.id ? 'active-selection' : ''}"
+                data-geraetetyp-id="${typ.id}"
+                data-geraetetyp-name="${typ.anzeigeName}"
+            >
+                <span>${typ.anzeigeName}</span>
+                <small>${typ.kategorie ?? ''}</small>
+            </button>
+        </li>
+    `).join('');
+}
+
+function rendereReservierungsliste() {
+    const list = document.getElementById('meine-reservierungen-liste');
+    if (!list) {
         return;
     }
 
-    if (!ausleihdatum || !rueckgabedatum) {
-        alert('Bitte Ausleihdatum und Rückgabedatum eingeben.');
+    if (!state.liste.reservierungen.length) {
+        list.innerHTML = '<li class="empty-list-item">Noch keine Reservierungen vorhanden.</li>';
         return;
     }
 
-    const response = await fetch('/api/reservierung-ausleihe/ausleihen', {
-        method: 'POST',
+    list.innerHTML = state.liste.reservierungen.map((eintrag) => `
+        <li class="reservation-item">
+            <div>
+                <strong>${eintrag.geraetetypName}</strong>
+                <div>${eintrag.ausleihdatum} bis ${eintrag.rueckgabedatum}</div>
+            </div>
+            <div class="reservation-actions">
+                <button type="button" data-edit-id="${eintrag.reservierungsNr}">Bearbeiten</button>
+                <button type="button" class="danger-button" data-delete-id="${eintrag.reservierungsNr}">Löschen</button>
+            </div>
+        </li>
+    `).join('');
+}
+
+function validiereForm(formular) {
+    if (!state.form.personalNr) {
+        return 'Mitarbeiter konnte nicht automatisch erkannt werden.';
+    }
+    if (!state.form.geraetetypId) {
+        return 'Bitte zuerst einen Gerätetyp auswählen.';
+    }
+    if (!formular.ausleihdatum || !formular.rueckgabedatum) {
+        return 'Bitte Ausleihdatum und Rückgabedatum eingeben.';
+    }
+    if (formular.ausleihdatum > formular.rueckgabedatum) {
+        return 'Startdatum darf nicht nach dem Rückgabedatum liegen.';
+    }
+    return null;
+}
+
+async function speichereReservierung(token) {
+    const formular = leseFormular();
+    const fehler = validiereForm(formular);
+    if (fehler) {
+        alert(fehler);
+        return;
+    }
+
+    const requestBody = {
+        geraetetypId: Number(state.form.geraetetypId),
+        personalNr: Number(state.form.personalNr),
+        ausleihdatum: formular.ausleihdatum,
+        rueckgabedatum: formular.rueckgabedatum
+    };
+
+    const istBearbeitung = Boolean(state.form.reservierungsNr);
+    const url = istBearbeitung
+        ? `/api/reservierung-ausleihe/reservierungen/${state.form.reservierungsNr}`
+        : '/api/reservierung-ausleihe/reservierungen';
+
+    const response = await fetch(url, {
+        method: istBearbeitung ? 'PUT' : 'POST',
         headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`
+            ...authHeaders(token)
         },
-        body: JSON.stringify({
-            geraetetypId: Number(selectedGeraetetypId),
-            personalNr: Number(selectedPersonalNr),
-            ausleihdatum,
-            rueckgabedatum
-        })
+        body: JSON.stringify(requestBody)
     });
 
     const data = await response.json();
-
     if (!response.ok) {
-        alert(data.error || 'Fehler beim Speichern der Ausleihe.');
+        alert(data.error || 'Reservierung konnte nicht gespeichert werden.');
         return;
     }
 
-    alert('Ausleihe erfolgreich gespeichert.');
-    selectedRaumNr = null;
-    selectedGeraetetypId = null;
-    selectedRaumName = '';
-    selectedGeraetName = '';
+    alert(istBearbeitung ? 'Reservierung aktualisiert.' : 'Reservierung erstellt.');
+    await initialisiereTab(token, false);
+    resetFormular();
 }
 
-function schreibeAuswahlInsFormular() {
-    const mitarbeiterInput = document.getElementById('mitarbeiter');
-    const raumInput = document.getElementById('raum');
-    const geraetInput = document.getElementById('geraet');
-
-    if (mitarbeiterInput && selectedMitarbeiterName) {
-        mitarbeiterInput.value = selectedMitarbeiterName;
+async function loescheReservierung(token, reservierungsNr) {
+    const bestaetigt = window.confirm('Reservierung wirklich löschen?');
+    if (!bestaetigt) {
+        return;
     }
 
-    if (raumInput && selectedRaumName) {
-        raumInput.value = selectedRaumName;
+    const response = await fetch(`/api/reservierung-ausleihe/reservierungen/${reservierungsNr}`, {
+        method: 'DELETE',
+        headers: authHeaders(token)
+    });
+
+    if (!response.ok) {
+        const data = await response.json();
+        alert(data.error || 'Reservierung konnte nicht gelöscht werden.');
+        return;
     }
 
-    if (geraetInput && selectedGeraetName) {
-        geraetInput.value = selectedGeraetName;
+    await initialisiereTab(token, false);
+    if (state.form.reservierungsNr === reservierungsNr) {
+        resetFormular();
     }
+}
+
+function bearbeiteReservierung(reservierungsNr) {
+    const reservierung = state.liste.reservierungen.find((eintrag) => eintrag.reservierungsNr === reservierungsNr);
+    if (!reservierung) {
+        return;
+    }
+
+    state.form.reservierungsNr = reservierung.reservierungsNr;
+    state.form.geraetetypId = reservierung.geraetetypId;
+    state.form.geraetetypName = reservierung.geraetetypName;
+    state.form.ausleihdatum = reservierung.ausleihdatum;
+    state.form.rueckgabedatum = reservierung.rueckgabedatum;
+
+    schreibeFormular();
+    rendereGeraetetypListe();
+}
+
+async function initialisiereTab(token, includeMitarbeiter = true) {
+    if (includeMitarbeiter || !state.form.personalNr) {
+        const user = await ladeCurrentMitarbeiter(token);
+        if (user) {
+            state.form.personalNr = user.personalNr;
+            state.form.mitarbeiterName = user.mitarbeiterName;
+        }
+    }
+
+    state.suche.ergebnisse = await ladeGeraetetypen(token, state.suche.suchbegriff);
+    state.liste.reservierungen = await ladeEigeneReservierungen(token);
+
+    schreibeFormular();
+    rendereGeraetetypListe();
+    rendereReservierungsliste();
 }
 
 export function registerReservierungAusleiheHandlers({
                                                          pageContent,
                                                          getToken,
                                                          redirectToLogin,
-                                                         getState,
-                                                         setState,
-                                                         switchTab
+                                                         getState
                                                      }) {
     pageContent.addEventListener('click', async (event) => {
         const target = event.target.closest(
-            '#btn-ausleihen, #back-to-reservierung-menu, #btn-ausleihe-speichern, #raum, #geraet, #back-to-form, .select-raum-row, .select-geraet-row'
+            '#btn-reservierung-speichern, #btn-reservierung-abbrechen, [data-geraetetyp-id], [data-edit-id], [data-delete-id]'
         );
 
         if (!target) {
@@ -229,103 +276,31 @@ export function registerReservierungAusleiheHandlers({
             return;
         }
 
-        const state = getState();
-
-        if (target.id === 'btn-ausleihen') {
-            setState({
-                currentSubView: 'ausleihe',
-                currentAusleiheView: 'form'
-            });
-            await switchTab(state.activeTabKey, token, state.allowedTabKeys);
-            setTimeout(async () => {
-                schreibeAuswahlInsFormular();
-                await setzeCurrentMitarbeiter(token);
-            }, 0);
+        if (target.id === 'btn-reservierung-speichern') {
+            await speichereReservierung(token);
             return;
         }
 
-        if (target.id === 'raum') {
-            setState({
-                currentSubView: 'ausleihe',
-                currentAusleiheView: 'raum'
-            });
-            await switchTab(state.activeTabKey, token, state.allowedTabKeys);
-
-            const raeume = await sucheRaeume('', token);
-            renderRaumTabelle(raeume);
+        if (target.id === 'btn-reservierung-abbrechen') {
+            resetFormular();
             return;
         }
 
-        if (target.id === 'geraet') {
-            setState({
-                currentSubView: 'ausleihe',
-                currentAusleiheView: 'geraet'
-            });
-            await switchTab(state.activeTabKey, token, state.allowedTabKeys);
-
-            const geraete = await sucheGeraete('', token);
-            renderGeraetTabelle(geraete);
+        if (target.dataset.geraetetypId) {
+            state.form.geraetetypId = Number(target.dataset.geraetetypId);
+            state.form.geraetetypName = target.dataset.geraetetypName || '';
+            schreibeFormular();
+            rendereGeraetetypListe();
             return;
         }
 
-        if (target.id === 'back-to-form') {
-            setState({
-                currentSubView: 'ausleihe',
-                currentAusleiheView: 'form'
-            });
-            await switchTab(state.activeTabKey, token, state.allowedTabKeys);
-            setTimeout(async () => {
-                schreibeAuswahlInsFormular();
-                await setzeCurrentMitarbeiter(token);
-            }, 0);
+        if (target.dataset.editId) {
+            bearbeiteReservierung(Number(target.dataset.editId));
             return;
         }
 
-        if (target.id === 'back-to-reservierung-menu') {
-            setState({
-                currentSubView: 'menu',
-                currentAusleiheView: 'form'
-            });
-            await switchTab(state.activeTabKey, token, state.allowedTabKeys);
-            return;
-        }
-
-        if (target.classList.contains('select-raum-row')) {
-            selectedRaumNr = Number(target.dataset.raumNr);
-            selectedRaumName = target.dataset.raumName || '';
-
-            setState({
-                currentSubView: 'ausleihe',
-                currentAusleiheView: 'form'
-            });
-
-            await switchTab(state.activeTabKey, token, state.allowedTabKeys);
-            setTimeout(async () => {
-                schreibeAuswahlInsFormular();
-                await setzeCurrentMitarbeiter(token);
-            }, 0);
-            return;
-        }
-
-        if (target.classList.contains('select-geraet-row')) {
-            selectedGeraetetypId = Number(target.dataset.geraetetypId);
-            selectedGeraetName = target.dataset.geraetName || '';
-
-            setState({
-                currentSubView: 'ausleihe',
-                currentAusleiheView: 'form'
-            });
-
-            await switchTab(state.activeTabKey, token, state.allowedTabKeys);
-            setTimeout(async () => {
-                schreibeAuswahlInsFormular();
-                await setzeCurrentMitarbeiter(token);
-            }, 0);
-            return;
-        }
-
-        if (target.id === 'btn-ausleihe-speichern') {
-            await speichereAusleihe(token);
+        if (target.dataset.deleteId) {
+            await loescheReservierung(token, Number(target.dataset.deleteId));
         }
     });
 
@@ -333,19 +308,31 @@ export function registerReservierungAusleiheHandlers({
         const target = event.target;
         const token = getToken();
 
-        if (!token) {
+        if (!token || target.id !== 'geraetetyp-suche-input') {
             return;
         }
 
-        if (target.id === 'raum-suche-input') {
-            const raeume = await sucheRaeume(target.value, token);
-            renderRaumTabelle(raeume);
-            return;
-        }
-
-        if (target.id === 'geraet-suche-input') {
-            const geraete = await sucheGeraete(target.value, token);
-            renderGeraetTabelle(geraete);
-        }
+        state.suche.suchbegriff = target.value || '';
+        state.suche.ergebnisse = await ladeGeraetetypen(token, state.suche.suchbegriff);
+        rendereGeraetetypListe();
     });
+
+    const observer = new MutationObserver(async () => {
+        const tabIstAktiv = getState().activeTabKey === 'reservierung-ausleihe';
+        const reservierungsListe = document.getElementById('meine-reservierungen-liste');
+        if (!tabIstAktiv || !reservierungsListe || reservierungsListe.dataset.initialized === 'true') {
+            return;
+        }
+
+        reservierungsListe.dataset.initialized = 'true';
+        const token = getToken();
+        if (!token) {
+            redirectToLogin();
+            return;
+        }
+
+        await initialisiereTab(token);
+    });
+
+    observer.observe(pageContent, { childList: true, subtree: true });
 }
