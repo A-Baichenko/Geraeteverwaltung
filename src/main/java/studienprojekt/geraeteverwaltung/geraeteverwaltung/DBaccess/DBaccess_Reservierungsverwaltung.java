@@ -2,14 +2,13 @@ package studienprojekt.geraeteverwaltung.geraeteverwaltung.DBaccess;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
+import java.time.LocalDate;
+import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import studienprojekt.geraeteverwaltung.geraeteverwaltung.DBaccess.entity.Geraetetyp;
 import studienprojekt.geraeteverwaltung.geraeteverwaltung.DBaccess.entity.Reservierung;
 import studienprojekt.geraeteverwaltung.mitarbeiterverwalten.DBaccess.entity.Mitarbeiter;
-
-
-import java.time.LocalDate;
 
 @Service
 @Transactional
@@ -19,6 +18,8 @@ public class DBaccess_Reservierungsverwaltung {
     private EntityManager em;
 
     public Reservierung reserviereGeraet(Long geraetetypId, Integer personalNr, LocalDate ausleihdatum, LocalDate rueckgabedatum) {
+        validiereDatumsbereich(ausleihdatum, rueckgabedatum);
+
         Geraetetyp geraetetyp = em.find(Geraetetyp.class, geraetetypId);
         Mitarbeiter mitarbeiter = em.find(Mitarbeiter.class, personalNr);
 
@@ -27,7 +28,7 @@ public class DBaccess_Reservierungsverwaltung {
         }
 
         if (!istVerfuegbar(geraetetypId, ausleihdatum, rueckgabedatum)) {
-            throw new IllegalStateException("Im gewünschten Zeitraum ist kein Gerät verfügbar");
+            throw new IllegalStateException("Kein Gerät dieses Typs verfügbar");
         }
 
         Reservierung reservierung = new Reservierung(ausleihdatum, rueckgabedatum, geraetetyp, mitarbeiter);
@@ -39,6 +40,8 @@ public class DBaccess_Reservierungsverwaltung {
                                                     Integer personalNr,
                                                     LocalDate ausleihdatum,
                                                     LocalDate rueckgabedatum) {
+        validiereDatumsbereich(ausleihdatum, rueckgabedatum);
+
         Reservierung reservierung = em.find(Reservierung.class, reservierungsNr);
         if (reservierung == null) {
             throw new IllegalArgumentException("Reservierung nicht gefunden");
@@ -46,8 +49,8 @@ public class DBaccess_Reservierungsverwaltung {
         if (!reservierung.getMitarbeiter().getPersonalNr().equals(personalNr)) {
             throw new IllegalArgumentException("Reservierung gehört nicht zu diesem Mitarbeiter");
         }
-        if (!istVerfuegbarExklusive( reservierung.getGeraetetyp().getId(), ausleihdatum, rueckgabedatum, reservierungsNr)) {
-            throw new IllegalStateException("Im gewünschten Zeitraum ist kein Gerät verfügbar");
+        if (!istVerfuegbarExklusive(reservierung.getGeraetetyp().getId(), ausleihdatum, rueckgabedatum, reservierungsNr)) {
+            throw new IllegalStateException("Kein Gerät dieses Typs verfügbar");
         }
 
         reservierung.aendere(ausleihdatum, rueckgabedatum);
@@ -55,12 +58,14 @@ public class DBaccess_Reservierungsverwaltung {
     }
 
     public Reservierung bearbeiteFremdeReservierung(Integer reservierungsNr, LocalDate ausleihdatum, LocalDate rueckgabedatum) {
+        validiereDatumsbereich(ausleihdatum, rueckgabedatum);
+
         Reservierung reservierung = em.find(Reservierung.class, reservierungsNr);
         if (reservierung == null) {
             throw new IllegalArgumentException("Reservierung nicht gefunden");
         }
         if (!istVerfuegbarExklusive(reservierung.getGeraetetyp().getId(), ausleihdatum, rueckgabedatum, reservierungsNr)) {
-            throw new IllegalStateException("Im gewünschten Zeitraum ist kein Gerät verfügbar");
+            throw new IllegalStateException("Kein Gerät dieses Typs verfügbar");
         }
 
         reservierung.aendere(ausleihdatum, rueckgabedatum);
@@ -90,6 +95,14 @@ public class DBaccess_Reservierungsverwaltung {
 
     public Reservierung sucheReservierung(Integer reservierungsNr) {
         return em.find(Reservierung.class, reservierungsNr);
+    }
+
+    public List<Reservierung> findeReservierungenFuerMitarbeiter(Integer personalNr) {
+        return em.createQuery(
+                        "SELECT r FROM Reservierung r JOIN FETCH r.geraetetyp WHERE r.mitarbeiter.personalNr = :personalNr ORDER BY r.ausleihdatum DESC",
+                        Reservierung.class)
+                .setParameter("personalNr", personalNr)
+                .getResultList();
     }
 
     private boolean istVerfuegbar(Long geraetetypId, LocalDate von, LocalDate bis) {
@@ -124,5 +137,15 @@ public class DBaccess_Reservierungsverwaltung {
                 .getSingleResult();
 
         return verfuegbareGeraete > (aktiveReservierungen + aktiveAusleihen);
+    }
+
+    private void validiereDatumsbereich(LocalDate ausleihdatum, LocalDate rueckgabedatum) {
+        if (ausleihdatum == null || rueckgabedatum == null) {
+            throw new IllegalArgumentException("Ausleihdatum und Rückgabedatum sind Pflichtfelder");
+        }
+
+        if (ausleihdatum.isAfter(rueckgabedatum)) {
+            throw new IllegalArgumentException("Startdatum darf nicht nach dem Rückgabedatum liegen");
+        }
     }
 }

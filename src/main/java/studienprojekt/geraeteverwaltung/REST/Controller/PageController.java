@@ -13,9 +13,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import studienprojekt.geraeteverwaltung.REST.Controller.htmlstrings.*;
-import studienprojekt.geraeteverwaltung.REST.Controller.htmlstrings.reservierungausleihe.Ausleihe;
-import studienprojekt.geraeteverwaltung.REST.Controller.htmlstrings.reservierungausleihe.GeraetSucheHtml;
-import studienprojekt.geraeteverwaltung.REST.Controller.htmlstrings.reservierungausleihe.RaumSucheHtml;
 import studienprojekt.geraeteverwaltung.REST.Service.JwtService;
 import studienprojekt.geraeteverwaltung.mitarbeiterverwalten.DBaccess.DBaccess_AppUserverwaltung;
 import studienprojekt.geraeteverwaltung.mitarbeiterverwalten.DBaccess.entity.AppUser;
@@ -119,24 +116,12 @@ public class PageController {
     private String htmlForTab(String tabKey, String view, String sub) {
         return switch (Tab.fromKey(tabKey)) {
             case HOME -> HomeHtml.content();
-            case RESERVIERUNG_AUSLEIHE -> htmlForReservierungAusleihe(view, sub);
+            case RESERVIERUNG_AUSLEIHE -> ReservierungAusleiheHtml.content();
             case GERAETEVERWALTUNG -> GeraeteverwaltungHtml.content();
             case MITARBEITERVERWALTUNG -> MitarbeiterverwaltungHtml.content();
             case RAUMVERWALTUNG -> RaumverwaltungHtml.content();
             case PLACEHOLDER -> "";
         };
-    }
-
-    private String htmlForReservierungAusleihe(String view, String sub) {
-        if ("ausleihe".equals(view)) {
-            return switch (sub) {
-                case "raum" -> RaumSucheHtml.content();
-                case "geraet" -> GeraetSucheHtml.content();
-                default -> Ausleihe.content();
-            };
-        }
-
-        return ReservierungAusleiheHtml.content();
     }
 
     private enum Tab {
