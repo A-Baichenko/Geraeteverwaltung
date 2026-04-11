@@ -46,7 +46,9 @@ public final class ReservierungAusleiheHtml {
                                 <label for="rueckgabedatum" class="form-label">Rückgabedatum</label>
                                 <input id="rueckgabedatum" type="date" class="form-input" />
                             </div>
-
+                            <p class="reservation-note">
+                                Nicht verfügbare Zeiträume werden nach Auswahl eines Gerätetyps im Kalender ausgegraut und gesperrt.
+                            </p>
                             <button id="btn-reservierung-speichern" type="button">Reservieren</button>
                             <button id="btn-reservierung-abbrechen" type="button" class="secondary-button hidden">Bearbeitung abbrechen</button>
                         </div>

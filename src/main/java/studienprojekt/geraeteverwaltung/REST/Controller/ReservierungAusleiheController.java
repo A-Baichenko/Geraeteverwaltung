@@ -3,6 +3,7 @@ package studienprojekt.geraeteverwaltung.REST.Controller;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.http.HttpServletRequest;
 import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 import java.util.Map;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -76,6 +77,36 @@ public class ReservierungAusleiheController {
         );
     }
 
+    @GetMapping("/device-types/{geraetetypId}/unavailable-periods")
+    public ResponseEntity<?> nichtVerfuegbareZeitraeume(
+            @PathVariable Long geraetetypId,
+            @RequestParam String start,
+            @RequestParam String end,
+            @RequestParam(required = false) Integer excludeReservierungId) {
+        try {
+            LocalDate startDatum = LocalDate.parse(start);
+            LocalDate endDatum = LocalDate.parse(end);
+
+            var zeitraeume = dbaccessReservierungsverwaltung.findeNichtVerfuegbareZeitraeume(
+                    geraetetypId,
+                    startDatum,
+                    endDatum,
+                    excludeReservierungId
+            );
+
+            return ResponseEntity.ok(zeitraeume.stream()
+                    .map(zeitraum -> Map.of(
+                            "start", zeitraum.start(),
+                            "end", zeitraum.ende()
+                    ))
+                    .toList());
+        } catch (DateTimeParseException ex) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Ungültiges Datumsformat"));
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().body(Map.of("error", ex.getMessage()));
+        }
+    }
+
     @PostMapping("/reservierungen")
     public ResponseEntity<?> reservieren(@RequestBody ReservierungRequest request, HttpServletRequest httpRequest) {
         AppUser user = authenticatedUser(httpRequest);
@@ -102,7 +133,9 @@ public class ReservierungAusleiheController {
         } catch (IllegalArgumentException ex) {
             return ResponseEntity.badRequest().body(Map.of("error", ex.getMessage()));
         } catch (IllegalStateException ex) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", ex.getMessage()));
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(
+                    "error", "Für diesen Gerätetyp ist im gewählten Zeitraum kein freies Gerät verfügbar."
+            ));
         }
     }
 
@@ -131,7 +164,9 @@ public class ReservierungAusleiheController {
         } catch (IllegalArgumentException ex) {
             return ResponseEntity.badRequest().body(Map.of("error", ex.getMessage()));
         } catch (IllegalStateException ex) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", ex.getMessage()));
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(
+                    "error", "Für diesen Gerätetyp ist im gewählten Zeitraum kein freies Gerät verfügbar."
+            ));
         }
     }
 

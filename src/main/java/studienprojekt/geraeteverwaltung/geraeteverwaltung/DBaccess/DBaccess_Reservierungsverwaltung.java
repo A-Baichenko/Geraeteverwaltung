@@ -3,6 +3,7 @@ package studienprojekt.geraeteverwaltung.geraeteverwaltung.DBaccess;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -105,6 +106,55 @@ public class DBaccess_Reservierungsverwaltung {
                 .getResultList();
     }
 
+    public List<Zeitraum> findeNichtVerfuegbareZeitraeume(Long geraetetypId,
+                                                          LocalDate start,
+                                                          LocalDate ende,
+                                                          Integer exklusiveReservierungId) {
+        validiereDatumsbereich(start, ende);
+
+        Long nutzbareKapazitaet = em.createQuery(
+                        "SELECT COUNT(g) FROM Geraet g WHERE g.geraetetyp.id = :typId AND g.istAusleihbar = true",
+                        Long.class)
+                .setParameter("typId", geraetetypId)
+                .getSingleResult();
+
+        if (nutzbareKapazitaet == 0L) {
+            return List.of(new Zeitraum(start, ende));
+        }
+
+        List<LocalDate> blockierteTage = new ArrayList<>();
+        LocalDate tag = start;
+        while (!tag.isAfter(ende)) {
+            Long aktiveReservierungen = zaehleAktiveReservierungen(geraetetypId, tag, exklusiveReservierungId);
+            Long aktiveAusleihen = zaehleAktiveAusleihen(geraetetypId, tag);
+            if (nutzbareKapazitaet <= (aktiveReservierungen + aktiveAusleihen)) {
+                blockierteTage.add(tag);
+            }
+            tag = tag.plusDays(1);
+        }
+
+        if (blockierteTage.isEmpty()) {
+            return List.of();
+        }
+
+        List<Zeitraum> zeitraeume = new ArrayList<>();
+        LocalDate von = blockierteTage.get(0);
+        LocalDate bis = von;
+
+        for (int i = 1; i < blockierteTage.size(); i++) {
+            LocalDate aktuellerTag = blockierteTage.get(i);
+            if (aktuellerTag.equals(bis.plusDays(1))) {
+                bis = aktuellerTag;
+                continue;
+            }
+            zeitraeume.add(new Zeitraum(von, bis));
+            von = aktuellerTag;
+            bis = aktuellerTag;
+        }
+        zeitraeume.add(new Zeitraum(von, bis));
+        return zeitraeume;
+    }
+
     private boolean istVerfuegbar(Long geraetetypId, LocalDate von, LocalDate bis) {
         return istVerfuegbarExklusive(geraetetypId, von, bis, null);
     }
@@ -139,6 +189,31 @@ public class DBaccess_Reservierungsverwaltung {
         return verfuegbareGeraete > (aktiveReservierungen + aktiveAusleihen);
     }
 
+    private Long zaehleAktiveReservierungen(Long geraetetypId, LocalDate tag, Integer exklusiveReservierungId) {
+        String reservierungenJpql = "SELECT COUNT(r) FROM Reservierung r WHERE r.geraetetyp.id = :typId " +
+                "AND r.ausleihdatum <= :tag AND r.rueckgabedatum >= :tag" +
+                (exklusiveReservierungId != null ? " AND r.reservierungsNr <> :id" : "");
+
+        var query = em.createQuery(reservierungenJpql, Long.class)
+                .setParameter("typId", geraetetypId)
+                .setParameter("tag", tag);
+        if (exklusiveReservierungId != null) {
+            query.setParameter("id", exklusiveReservierungId);
+        }
+        return query.getSingleResult();
+    }
+
+    private Long zaehleAktiveAusleihen(Long geraetetypId, LocalDate tag) {
+        return em.createQuery(
+                        "SELECT COUNT(a) FROM Ausleihe a WHERE a.geraet.geraetetyp.id = :typId " +
+                                "AND a.geraet.istAusleihbar = true " +
+                                "AND a.ausleihdatum <= :tag " +
+                                "AND COALESCE(a.tatsaechlichesRueckgabedatum, a.vereinbartesRueckgabedatum) >= :tag", Long.class)
+                .setParameter("typId", geraetetypId)
+                .setParameter("tag", tag)
+                .getSingleResult();
+    }
+
     private void validiereDatumsbereich(LocalDate ausleihdatum, LocalDate rueckgabedatum) {
         if (ausleihdatum == null || rueckgabedatum == null) {
             throw new IllegalArgumentException("Ausleihdatum und Rückgabedatum sind Pflichtfelder");
@@ -147,5 +222,8 @@ public class DBaccess_Reservierungsverwaltung {
         if (ausleihdatum.isAfter(rueckgabedatum)) {
             throw new IllegalArgumentException("Startdatum darf nicht nach dem Rückgabedatum liegen");
         }
+    }
+
+    public record Zeitraum(LocalDate start, LocalDate ende) {
     }
 }
