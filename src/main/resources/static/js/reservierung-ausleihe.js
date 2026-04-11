@@ -8,6 +8,9 @@ const state = {
         ausleihdatum: '',
         rueckgabedatum: ''
     },
+    kalender: {
+        unavailablePeriods: []
+    },
     suche: {
         suchbegriff: '',
         ergebnisse: []
@@ -16,6 +19,9 @@ const state = {
         reservierungen: []
     }
 };
+
+let ausleihdatumPicker = null;
+let rueckgabedatumPicker = null;
 
 function authHeaders(token) {
     return {
@@ -54,6 +60,37 @@ async function ladeEigeneReservierungen(token) {
     return response.json();
 }
 
+async function ladeNichtVerfuegbareZeitraeume(token) {
+    if (!state.form.geraetetypId) {
+        state.kalender.unavailablePeriods = [];
+        aktualisiereDatepickerSperren();
+        return;
+    }
+
+    const heute = new Date();
+    const start = heute.toISOString().slice(0, 10);
+    const endeDatum = new Date(heute);
+    endeDatum.setMonth(endeDatum.getMonth() + 12);
+    const end = endeDatum.toISOString().slice(0, 10);
+
+    const url = new URL(`/api/reservierung-ausleihe/device-types/${state.form.geraetetypId}/unavailable-periods`, window.location.origin);
+    url.searchParams.set('start', start);
+    url.searchParams.set('end', end);
+    if (state.form.reservierungsNr) {
+        url.searchParams.set('excludeReservierungId', String(state.form.reservierungsNr));
+    }
+
+    const response = await fetch(url.toString(), { headers: authHeaders(token) });
+    if (!response.ok) {
+        state.kalender.unavailablePeriods = [];
+        aktualisiereDatepickerSperren();
+        return;
+    }
+
+    state.kalender.unavailablePeriods = await response.json();
+    aktualisiereDatepickerSperren();
+}
+
 function leseFormular() {
     return {
         ausleihdatum: document.getElementById('ausleihdatum')?.value || '',
@@ -81,6 +118,8 @@ function schreibeFormular() {
     if (abbrechenButton) {
         abbrechenButton.classList.toggle('hidden', !state.form.reservierungsNr);
     }
+
+    synchronisierePickerWerte();
 }
 
 function resetFormular() {
@@ -89,7 +128,9 @@ function resetFormular() {
     state.form.geraetetypName = '';
     state.form.ausleihdatum = '';
     state.form.rueckgabedatum = '';
+    state.kalender.unavailablePeriods = [];
     schreibeFormular();
+    aktualisiereDatepickerSperren();
 }
 
 function rendereGeraetetypListe() {
@@ -155,6 +196,9 @@ function validiereForm(formular) {
     }
     if (formular.ausleihdatum > formular.rueckgabedatum) {
         return 'Startdatum darf nicht nach dem Rückgabedatum liegen.';
+    }
+    if (ueberschneidetGesperrteZeitraeume(formular.ausleihdatum, formular.rueckgabedatum)) {
+        return 'Für diesen Gerätetyp ist im gewählten Zeitraum kein freies Gerät verfügbar.';
     }
     return null;
 }
@@ -238,6 +282,69 @@ function bearbeiteReservierung(reservierungsNr) {
     rendereGeraetetypListe();
 }
 
+function initialisiereDatepicker() {
+    if (typeof window.flatpickr !== 'function') {
+        return;
+    }
+
+    const commonConfig = {
+        dateFormat: 'Y-m-d',
+        locale: 'de',
+        disableMobile: true
+    };
+
+    ausleihdatumPicker?.destroy();
+    rueckgabedatumPicker?.destroy();
+
+    ausleihdatumPicker = window.flatpickr('#ausleihdatum', {
+        ...commonConfig,
+        onChange: (_, dateStr) => {
+            state.form.ausleihdatum = dateStr || '';
+        }
+    });
+
+    rueckgabedatumPicker = window.flatpickr('#rueckgabedatum', {
+        ...commonConfig,
+        onChange: (_, dateStr) => {
+            state.form.rueckgabedatum = dateStr || '';
+        }
+    });
+
+    synchronisierePickerWerte();
+    aktualisiereDatepickerSperren();
+}
+
+function synchronisierePickerWerte() {
+    if (ausleihdatumPicker) {
+        ausleihdatumPicker.setDate(state.form.ausleihdatum || null, false);
+    }
+    if (rueckgabedatumPicker) {
+        rueckgabedatumPicker.setDate(state.form.rueckgabedatum || null, false);
+    }
+}
+
+function aktualisiereDatepickerSperren() {
+    if (!ausleihdatumPicker || !rueckgabedatumPicker) {
+        return;
+    }
+
+    const disableConfig = state.kalender.unavailablePeriods.map((periode) => ({
+        from: periode.start,
+        to: periode.end
+    }));
+
+    ausleihdatumPicker.set('disable', disableConfig);
+    rueckgabedatumPicker.set('disable', disableConfig);
+}
+
+function ueberschneidetGesperrteZeitraeume(start, ende) {
+    if (!start || !ende) {
+        return false;
+    }
+
+    return state.kalender.unavailablePeriods.some((periode) => !(ende < periode.start || start > periode.end));
+}
+
 async function initialisiereTab(token, includeMitarbeiter = true) {
     if (includeMitarbeiter || !state.form.personalNr) {
         const user = await ladeCurrentMitarbeiter(token);
@@ -249,6 +356,7 @@ async function initialisiereTab(token, includeMitarbeiter = true) {
 
     state.suche.ergebnisse = await ladeGeraetetypen(token, state.suche.suchbegriff);
     state.liste.reservierungen = await ladeEigeneReservierungen(token);
+    await ladeNichtVerfuegbareZeitraeume(token);
 
     schreibeFormular();
     rendereGeraetetypListe();
@@ -289,6 +397,9 @@ export function registerReservierungAusleiheHandlers({
         if (target.dataset.geraetetypId) {
             state.form.geraetetypId = Number(target.dataset.geraetetypId);
             state.form.geraetetypName = target.dataset.geraetetypName || '';
+            state.form.ausleihdatum = '';
+            state.form.rueckgabedatum = '';
+            await ladeNichtVerfuegbareZeitraeume(token);
             schreibeFormular();
             rendereGeraetetypListe();
             return;
@@ -301,6 +412,7 @@ export function registerReservierungAusleiheHandlers({
 
         if (target.dataset.deleteId) {
             await loescheReservierung(token, Number(target.dataset.deleteId));
+            await ladeNichtVerfuegbareZeitraeume(token);
         }
     });
 
@@ -308,13 +420,23 @@ export function registerReservierungAusleiheHandlers({
         const target = event.target;
         const token = getToken();
 
-        if (!token || target.id !== 'geraetetyp-suche-input') {
+        if (!token) {
             return;
         }
 
-        state.suche.suchbegriff = target.value || '';
-        state.suche.ergebnisse = await ladeGeraetetypen(token, state.suche.suchbegriff);
-        rendereGeraetetypListe();
+        if (target.id === 'geraetetyp-suche-input') {
+            state.suche.suchbegriff = target.value || '';
+            state.suche.ergebnisse = await ladeGeraetetypen(token, state.suche.suchbegriff);
+            rendereGeraetetypListe();
+            return;
+        }
+
+        if (target.id === 'ausleihdatum' || target.id === 'rueckgabedatum') {
+            state.form[target.id] = target.value || '';
+            if (state.form.geraetetypId) {
+                await ladeNichtVerfuegbareZeitraeume(token);
+            }
+        }
     });
 
     const observer = new MutationObserver(async () => {
@@ -332,6 +454,7 @@ export function registerReservierungAusleiheHandlers({
         }
 
         await initialisiereTab(token);
+        initialisiereDatepicker();
     });
 
     observer.observe(pageContent, { childList: true, subtree: true });
