@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import studienprojekt.geraeteverwaltung.REST.Service.JwtService;
 import studienprojekt.geraeteverwaltung.geraeteverwaltung.DBaccess.DBaccess_Ausleiheverwaltung;
+import studienprojekt.geraeteverwaltung.REST.Controller.htmlstrings.GeraeteverwaltungReservierungsantraegeHtml;
 import studienprojekt.geraeteverwaltung.geraeteverwaltung.DBaccess.DBaccess_Reservierungsverwaltung;
 import studienprojekt.geraeteverwaltung.geraeteverwaltung.DBaccess.entity.Ausleihe;
 import studienprojekt.geraeteverwaltung.geraeteverwaltung.DBaccess.entity.Geraet;
@@ -72,7 +73,8 @@ public class GeraeteverwaltimgReservierungsantraege {
                         Map.of("key", "edit", "label", "Bearbeiten"),
                         Map.of("key", "delete", "label", "Löschen"),
                         Map.of("key", "accept", "label", "Annehmen")
-                )
+                ),
+                "layoutHtml", GeraeteverwaltungReservierungsantraegeHtml.content()
         ));
     }
 

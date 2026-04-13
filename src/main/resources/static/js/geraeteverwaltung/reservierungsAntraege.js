@@ -1,30 +1,35 @@
+const defaultFieldConfig = [
+    { key: 'mitarbeiterName', label: 'Mitarbeiter', readonly: true },
+    { key: 'geraetetypName', label: 'Gerätetyp', readonly: true },
+    { key: 'ausleihdatum', label: 'Ausleihdatum', readonly: true },
+    { key: 'rueckgabedatum', label: 'Rückgabedatum', readonly: true },
+    { key: 'selectedDeviceLabel', label: 'Ausgewähltes Gerät', readonly: true }
+];
+
 const managerState = {
-    roleContext: null,
-    moduleConfig: null,
-    initializing: false,
     requests: [],
+    fieldConfig: defaultFieldConfig,
+    layoutHtml: null,
     loading: {
-        config: false,
         requests: false,
-        action: false,
-        devices: false
+        action: false
     },
     error: null,
     activeRequest: null,
     activeFormDraft: null,
+    openSection: 'reservationRequests',
     deviceSelection: {
         isOpen: false,
         items: [],
         selectedDevice: null,
+        pendingDevice: null,
         loading: false,
         error: null
     }
 };
 
 function authHeaders(token) {
-    return {
-        Authorization: `Bearer ${token}`
-    };
+    return { Authorization: `Bearer ${token}` };
 }
 
 async function fetchManagerViewConfig(token) {
@@ -33,7 +38,8 @@ async function fetchManagerViewConfig(token) {
     });
 
     if (!response.ok) {
-        throw new Error('View-Konfiguration konnte nicht geladen werden.');
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || 'View-Konfiguration konnte nicht geladen werden.');
     }
 
     return response.json();
@@ -45,7 +51,8 @@ async function fetchReservationRequests(token) {
     });
 
     if (!response.ok) {
-        throw new Error('Reservierungsanträge konnten nicht geladen werden.');
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || 'Reservierungsanträge konnten nicht geladen werden.');
     }
 
     return response.json();
@@ -57,7 +64,8 @@ async function fetchReservationRequestById(token, reservationId) {
     });
 
     if (!response.ok) {
-        throw new Error('Reservierungsantrag konnte nicht geöffnet werden.');
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || 'Reservierungsantrag konnte nicht geöffnet werden.');
     }
 
     return response.json();
@@ -68,7 +76,7 @@ async function fetchAvailableDevices(token, reservationId) {
         headers: authHeaders(token)
     });
 
-    const data = await response.json();
+    const data = await response.json().catch(() => ({}));
     if (!response.ok) {
         throw new Error(data.error || 'Verfügbare Geräte konnten nicht geladen werden.');
     }
@@ -86,7 +94,7 @@ async function acceptReservationRequest(token, reservationId, inventarNr) {
         body: JSON.stringify({ inventarNr })
     });
 
-    const data = await response.json();
+    const data = await response.json().catch(() => ({}));
     if (!response.ok) {
         throw new Error(data.error || 'Antrag konnte nicht angenommen werden.');
     }
@@ -101,7 +109,7 @@ async function deleteReservationRequest(token, reservationId) {
     });
 
     if (!response.ok) {
-        const data = await response.json();
+        const data = await response.json().catch(() => ({}));
         throw new Error(data.error || 'Antrag konnte nicht gelöscht werden.');
     }
 }
@@ -122,111 +130,156 @@ function mapFieldValue(fieldKey, request, selectedDevice) {
     return map[fieldKey] ?? '—';
 }
 
-function isGuardedForCurrentRole(config, tabState) {
-    const activeRole = config?.roleContext?.activeRole;
-    const activeModule = config?.roleContext?.module;
-    const activeSubArea = config?.roleContext?.subArea;
+function ensureLayout(root) {
+    if (!root || root.dataset.layoutInjected === 'true') {
+        return;
+    }
 
-    return tabState.activeTabKey === 'geraeteverwaltung'
-        && activeRole === 'GERAETE_VERWALTER'
-        && activeModule === 'geraeteverwalten'
-        && activeSubArea === 'reservierungsantraege';
+    if (!managerState.layoutHtml) {
+        root.innerHTML = '<div class="placeholder">View-Konfiguration konnte nicht geladen werden.</div>';
+        return;
+    }
+
+    root.innerHTML = managerState.layoutHtml;
+    root.dataset.layoutInjected = 'true';
 }
 
 function renderManagerView(root) {
-    if (!root) {
+    ensureLayout(root);
+    if (!root || root.dataset.layoutInjected !== 'true') {
         return;
     }
 
-    if (managerState.loading.config || managerState.loading.requests) {
-        root.innerHTML = '<div class="placeholder">Reservierungsanträge werden geladen …</div>';
-        return;
+    root.querySelectorAll('.gv-accordion-section').forEach((section) => {
+        section.classList.toggle('is-open', section.dataset.section === managerState.openSection);
+    });
+
+    const globalError = root.querySelector('#gv-global-error');
+    if (globalError) {
+        globalError.textContent = managerState.error || '';
+        globalError.style.display = managerState.error ? 'block' : 'none';
     }
 
-    if (managerState.error) {
-        root.innerHTML = `<div class="placeholder">${managerState.error}</div>`;
-        return;
-    }
-
-    if (!managerState.moduleConfig) {
-        root.innerHTML = '<div class="placeholder">Keine Konfiguration für die aktuelle Rolle verfügbar.</div>';
-        return;
-    }
-
-    const requestListHtml = managerState.requests.length
-        ? managerState.requests.map((request) => `
-            <li class="gv-item">
-                <button type="button" data-action="open-request" data-request-id="${request.reservierungsNr}">
-                    <strong>${request.mitarbeiterName}</strong>
-                    <span>${request.geraetetypName}</span>
-                    <small>${request.ausleihdatum} bis ${request.rueckgabedatum}</small>
-                    <small>Verfügbar: ${request.availableCount}</small>
-                </button>
-            </li>
-        `).join('')
-        : '<li class="empty-list-item">Keine offenen Reservierungsanträge vorhanden.</li>';
-
-    const detailsOpenClass = managerState.activeRequest ? 'is-open' : '';
-    const selectedDevice = managerState.deviceSelection.selectedDevice;
-
-    const fieldConfig = managerState.moduleConfig.fieldConfig || [];
-    const fieldsHtml = fieldConfig.map((field) => `
-        <div class="gv-field">
-            <label>${field.label}</label>
-            <input type="text" value="${mapFieldValue(field.key, managerState.activeFormDraft, selectedDevice)}" ${field.readonly ? 'readonly' : ''} />
-        </div>
-    `).join('');
-
-    const actionDisabled = !managerState.activeRequest || managerState.loading.action;
-    const acceptDisabled = actionDisabled || !selectedDevice;
-
-    const deviceOverlayClass = managerState.deviceSelection.isOpen ? 'is-open' : '';
-    const deviceItems = managerState.deviceSelection.items || [];
-
-    const deviceListHtml = managerState.deviceSelection.loading
-        ? '<li class="empty-list-item">Geräte werden geladen …</li>'
-        : deviceItems.length
-            ? deviceItems.map((device) => `
-                <li>
-                    <button type="button" class="list-item-button" data-action="select-device" data-inventar-nr="${device.inventarNr}" data-device-label="${device.label}">
-                        <strong>${device.label}</strong>
+    const requestList = root.querySelector('#gv-request-list');
+    if (requestList) {
+        if (managerState.loading.requests) {
+            requestList.innerHTML = '<li class="empty-list-item">Reservierungsanträge werden geladen …</li>';
+        } else if (!managerState.requests.length) {
+            requestList.innerHTML = '<li class="empty-list-item">Keine offenen Reservierungsanträge vorhanden.</li>';
+        } else {
+            requestList.innerHTML = managerState.requests.map((request) => `
+                <li class="gv-item">
+                    <button type="button" data-action="open-request" data-request-id="${request.reservierungsNr}">
+                        <strong>${request.mitarbeiterName}</strong>
+                        <span>${request.geraetetypName}</span>
+                        <small>${request.ausleihdatum} bis ${request.rueckgabedatum}</small>
+                        <small>Verfügbar: ${request.availableCount}</small>
                     </button>
                 </li>
-            `).join('')
-            : '<li class="empty-list-item">Keine verfügbaren Geräte gefunden.</li>';
+            `).join('');
+        }
+    }
 
-    root.innerHTML = `
-        <div class="gv-grid">
-            <section>
-                <h3>Reservierungsanträge</h3>
-                <ul class="gv-list">${requestListHtml}</ul>
-            </section>
+    const detailsPanel = root.querySelector('#gv-details-panel');
+    const fields = root.querySelector('#gv-fields');
+    const detailsPlaceholder = root.querySelector('#gv-details-placeholder');
+    const actionError = root.querySelector('#gv-action-error');
 
-            <section class="gv-slide-panel ${detailsOpenClass}">
-                <h3>Antrag</h3>
-                ${managerState.activeRequest ? `
-                    <div class="gv-fields">${fieldsHtml}</div>
-                    <div class="gv-actions">
-                        <button type="button" data-action="open-device-selection" ${actionDisabled ? 'disabled' : ''}>Gerät auswählen</button>
-                        <button type="button" data-action="edit-request" ${actionDisabled ? 'disabled' : ''}>Bearbeiten</button>
-                        <button type="button" class="danger-button" data-action="delete-request" ${actionDisabled ? 'disabled' : ''}>Löschen</button>
-                        <button type="button" data-action="accept-request" ${acceptDisabled ? 'disabled' : ''}>Annehmen</button>
-                    </div>
-                    ${managerState.deviceSelection.error ? `<p class="error-text">${managerState.deviceSelection.error}</p>` : ''}
-                ` : '<p class="placeholder">Bitte einen Reservierungsantrag öffnen.</p>'}
-            </section>
-        </div>
+    const selectedDevice = managerState.deviceSelection.selectedDevice;
 
-        <aside class="gv-device-overlay ${deviceOverlayClass}">
-            <div class="gv-device-overlay-header">
-                <button type="button" class="back-button" data-action="back-to-form">← Zurück</button>
-                <h3>Verfügbare Geräte</h3>
-            </div>
-            <p>${managerState.activeRequest ? managerState.activeRequest.geraetetypName : ''}</p>
-            ${managerState.deviceSelection.error ? `<p class="error-text">${managerState.deviceSelection.error}</p>` : ''}
-            <ul class="gv-device-list">${deviceListHtml}</ul>
-        </aside>
-    `;
+    if (!managerState.activeRequest) {
+        if (fields) {
+            fields.innerHTML = '';
+        }
+        if (detailsPlaceholder) {
+            detailsPlaceholder.style.display = 'block';
+        }
+        if (detailsPanel) {
+            detailsPanel.classList.remove('is-open');
+        }
+    } else {
+        if (detailsPlaceholder) {
+            detailsPlaceholder.style.display = 'none';
+        }
+        if (detailsPanel) {
+            detailsPanel.classList.add('is-open');
+        }
+        if (fields) {
+            fields.innerHTML = managerState.fieldConfig.map((field) => `
+                <div class="gv-field">
+                    <label>${field.label}</label>
+                    <input type="text" value="${mapFieldValue(field.key, managerState.activeFormDraft, selectedDevice)}" readonly />
+                </div>
+            `).join('');
+        }
+    }
+
+    if (actionError) {
+        actionError.textContent = managerState.deviceSelection.error || '';
+        actionError.style.display = managerState.deviceSelection.error ? 'block' : 'none';
+    }
+
+    const actionDisabled = !managerState.activeRequest || managerState.loading.action;
+
+    const openDeviceButton = root.querySelector('[data-action="open-device-selection"]');
+    const editButton = root.querySelector('[data-action="edit-request"]');
+    const deleteButton = root.querySelector('[data-action="delete-request"]');
+    const acceptButton = root.querySelector('[data-action="accept-request"]');
+
+    if (openDeviceButton) {
+        openDeviceButton.disabled = actionDisabled;
+    }
+    if (editButton) {
+        editButton.disabled = actionDisabled;
+    }
+    if (deleteButton) {
+        deleteButton.disabled = actionDisabled;
+    }
+    if (acceptButton) {
+        acceptButton.disabled = actionDisabled || !selectedDevice;
+    }
+
+    const modal = root.querySelector('#gv-device-modal');
+    const modalList = root.querySelector('#gv-device-list');
+    const deviceTypeName = root.querySelector('#gv-device-type-name');
+
+    if (deviceTypeName) {
+        deviceTypeName.textContent = managerState.activeRequest?.geraetetypName || '';
+    }
+
+    if (modal) {
+        modal.classList.toggle('is-open', managerState.deviceSelection.isOpen);
+    }
+
+    if (modalList) {
+        if (managerState.deviceSelection.loading) {
+            modalList.innerHTML = '<li class="empty-list-item">Geräte werden geladen …</li>';
+        } else if (!managerState.deviceSelection.items.length) {
+            modalList.innerHTML = '<li class="empty-list-item">Keine verfügbaren Geräte gefunden.</li>';
+        } else {
+            modalList.innerHTML = managerState.deviceSelection.items.map((device) => {
+                const checked = String(managerState.deviceSelection.pendingDevice?.inventarNr) === String(device.inventarNr)
+                    ? 'checked'
+                    : '';
+
+                return `
+                    <li>
+                        <label class="device-option">
+                            <input
+                                type="radio"
+                                name="selectedDevice"
+                                data-action="choose-device-radio"
+                                data-inventar-nr="${device.inventarNr}"
+                                data-device-label="${device.label}"
+                                ${checked}
+                            />
+                            <span>${device.label}</span>
+                        </label>
+                    </li>
+                `;
+            }).join('');
+        }
+    }
 }
 
 async function initializeManagerFlow(token, getState, pageContent) {
@@ -236,46 +289,36 @@ async function initializeManagerFlow(token, getState, pageContent) {
     }
 
     const root = pageContent.querySelector('#gv-manager-app');
-    if (!root || root.dataset.initialized === 'true' || managerState.initializing) {
+    if (!root || root.dataset.initialized === 'true') {
         return;
     }
 
-    managerState.initializing = true;
-    managerState.loading.config = true;
+    try {
+        const viewConfig = await fetchManagerViewConfig(token);
+        managerState.fieldConfig = viewConfig.fieldConfig || defaultFieldConfig;
+        managerState.layoutHtml = viewConfig.layoutHtml;
+        managerState.error = null;
+    } catch (error) {
+        managerState.error = error.message;
+    }
+
     managerState.loading.requests = true;
-    managerState.error = null;
     renderManagerView(root);
 
     try {
-        const config = await fetchManagerViewConfig(token);
-        managerState.roleContext = config.roleContext;
-        managerState.moduleConfig = config;
-
-        if (!isGuardedForCurrentRole(config, tabState)) {
-            root.innerHTML = '<div class="placeholder">Dieser Bereich ist nur für Geräteverwalter im Modul Reservierungsanträge verfügbar.</div>';
-            root.dataset.initialized = 'true';
-            return;
-        }
-
         managerState.requests = await fetchReservationRequests(token);
     } catch (error) {
         managerState.error = error.message;
+        managerState.requests = [];
     } finally {
-        managerState.loading.config = false;
         managerState.loading.requests = false;
-        managerState.initializing = false;
     }
 
     renderManagerView(root);
     root.dataset.initialized = 'true';
 }
 
-export function registerGeraeteverwaltungHandlers({
-                                                      pageContent,
-                                                      getToken,
-                                                      redirectToLogin,
-                                                      getState
-                                                  }) {
+export function registerGeraeteverwaltungHandlers({ pageContent, getToken, redirectToLogin, getState }) {
     pageContent.addEventListener('click', async (event) => {
         const target = event.target.closest('[data-action]');
         if (!target) {
@@ -296,7 +339,13 @@ export function registerGeraeteverwaltungHandlers({
         const action = target.dataset.action;
 
         try {
+            if (action === 'toggle-section') {
+                const sectionKey = target.dataset.sectionKey;
+                managerState.openSection = managerState.openSection === sectionKey ? '' : sectionKey;
+            }
+
             if (action === 'open-request') {
+                managerState.openSection = 'reservationRequests';
                 managerState.deviceSelection.error = null;
                 managerState.deviceSelection.selectedDevice = null;
                 managerState.activeRequest = await fetchReservationRequestById(token, Number(target.dataset.requestId));
@@ -311,22 +360,28 @@ export function registerGeraeteverwaltungHandlers({
                 managerState.deviceSelection.loading = true;
                 managerState.deviceSelection.isOpen = true;
                 managerState.deviceSelection.error = null;
+                managerState.deviceSelection.pendingDevice = managerState.deviceSelection.selectedDevice;
                 renderManagerView(root);
 
                 const devicePayload = await fetchAvailableDevices(token, managerState.activeRequest.reservierungsNr);
                 managerState.deviceSelection.items = devicePayload.devices || [];
             }
 
-            if (action === 'select-device') {
-                managerState.deviceSelection.selectedDevice = {
+            if (action === 'choose-device-radio') {
+                managerState.deviceSelection.pendingDevice = {
                     inventarNr: Number(target.dataset.inventarNr),
                     label: target.dataset.deviceLabel
                 };
-                managerState.deviceSelection.isOpen = false;
-                managerState.deviceSelection.error = null;
             }
 
-            if (action === 'back-to-form') {
+            if (action === 'confirm-device-selection') {
+                if (managerState.deviceSelection.pendingDevice) {
+                    managerState.deviceSelection.selectedDevice = managerState.deviceSelection.pendingDevice;
+                }
+                managerState.deviceSelection.isOpen = false;
+            }
+
+            if (action === 'close-device-selection') {
                 managerState.deviceSelection.isOpen = false;
                 managerState.deviceSelection.error = null;
             }
@@ -352,6 +407,7 @@ export function registerGeraeteverwaltungHandlers({
                     isOpen: false,
                     items: [],
                     selectedDevice: null,
+                    pendingDevice: null,
                     loading: false,
                     error: null
                 };
@@ -370,7 +426,7 @@ export function registerGeraeteverwaltungHandlers({
             }
 
             if (action === 'edit-request') {
-                managerState.deviceSelection.error = 'Bearbeiten ist als Handler vorbereitet, die Editor-Ansicht folgt im nächsten Schritt.';
+                managerState.deviceSelection.error = 'Bearbeiten folgt im nächsten Schritt.';
             }
         } catch (error) {
             managerState.deviceSelection.error = error.message;
@@ -386,8 +442,9 @@ export function registerGeraeteverwaltungHandlers({
         if (!token) {
             return;
         }
+
         await initializeManagerFlow(token, getState, pageContent);
     });
 
-    observer.observe(pageContent, { childList: true });
+    observer.observe(pageContent, { childList: true, subtree: true });
 }
