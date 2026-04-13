@@ -1,6 +1,7 @@
 const managerState = {
     roleContext: null,
     moduleConfig: null,
+    initializing: false,
     requests: [],
     loading: {
         config: false,
@@ -235,10 +236,11 @@ async function initializeManagerFlow(token, getState, pageContent) {
     }
 
     const root = pageContent.querySelector('#gv-manager-app');
-    if (!root || root.dataset.initialized === 'true') {
+    if (!root || root.dataset.initialized === 'true' || managerState.initializing) {
         return;
     }
 
+    managerState.initializing = true;
     managerState.loading.config = true;
     managerState.loading.requests = true;
     managerState.error = null;
@@ -261,6 +263,7 @@ async function initializeManagerFlow(token, getState, pageContent) {
     } finally {
         managerState.loading.config = false;
         managerState.loading.requests = false;
+        managerState.initializing = false;
     }
 
     renderManagerView(root);
@@ -386,5 +389,5 @@ export function registerGeraeteverwaltungHandlers({
         await initializeManagerFlow(token, getState, pageContent);
     });
 
-    observer.observe(pageContent, { childList: true, subtree: true });
+    observer.observe(pageContent, { childList: true });
 }
