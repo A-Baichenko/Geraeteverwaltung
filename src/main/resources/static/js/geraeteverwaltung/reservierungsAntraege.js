@@ -17,6 +17,7 @@ const managerState = {
     error: null,
     activeRequest: null,
     activeFormDraft: null,
+    isEditing: false,
     openSection: 'reservationRequests',
     deviceSelection: {
         isOpen: false,
@@ -114,6 +115,24 @@ async function deleteReservationRequest(token, reservationId) {
     }
 }
 
+async function updateReservationRequest(token, reservationId, payload) {
+    const response = await fetch(`/api/geraeteverwaltung/reservation-requests/${reservationId}`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+            ...authHeaders(token)
+        },
+        body: JSON.stringify(payload)
+    });
+
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+        throw new Error(data.error || 'Antrag konnte nicht bearbeitet werden.');
+    }
+
+    return data;
+}
+
 function mapFieldValue(fieldKey, request, selectedDevice) {
     if (!request) {
         return '—';
@@ -208,7 +227,12 @@ function renderManagerView(root) {
             fields.innerHTML = managerState.fieldConfig.map((field) => `
                 <div class="gv-field">
                     <label>${field.label}</label>
-                    <input type="text" value="${mapFieldValue(field.key, managerState.activeFormDraft, selectedDevice)}" readonly />
+                    <input
+                        type="${field.key === 'ausleihdatum' || field.key === 'rueckgabedatum' ? 'date' : 'text'}"
+                        value="${mapFieldValue(field.key, managerState.activeFormDraft, selectedDevice)}"
+                        data-field-key="${field.key}"
+                        ${field.readonly || !managerState.isEditing ? 'readonly' : ''}
+                    />
                 </div>
             `).join('');
         }
@@ -220,6 +244,7 @@ function renderManagerView(root) {
     }
 
     const actionDisabled = !managerState.activeRequest || managerState.loading.action;
+    const actionDisabledInEditMode = actionDisabled || managerState.isEditing;
 
     const openDeviceButton = root.querySelector('[data-action="open-device-selection"]');
     const editButton = root.querySelector('[data-action="edit-request"]');
@@ -227,16 +252,17 @@ function renderManagerView(root) {
     const acceptButton = root.querySelector('[data-action="accept-request"]');
 
     if (openDeviceButton) {
-        openDeviceButton.disabled = actionDisabled;
+        openDeviceButton.disabled = actionDisabledInEditMode;
     }
     if (editButton) {
+        editButton.textContent = managerState.isEditing ? 'Speichern' : 'Bearbeiten';
         editButton.disabled = actionDisabled;
     }
     if (deleteButton) {
-        deleteButton.disabled = actionDisabled;
+        deleteButton.disabled = actionDisabledInEditMode;
     }
     if (acceptButton) {
-        acceptButton.disabled = actionDisabled || !selectedDevice;
+        acceptButton.disabled = actionDisabledInEditMode || !selectedDevice;
     }
 
     const modal = root.querySelector('#gv-device-modal');
@@ -348,6 +374,7 @@ export function registerGeraeteverwaltungHandlers({ pageContent, getToken, redir
                 managerState.openSection = 'reservationRequests';
                 managerState.deviceSelection.error = null;
                 managerState.deviceSelection.selectedDevice = null;
+                managerState.isEditing = false;
                 managerState.activeRequest = await fetchReservationRequestById(token, Number(target.dataset.requestId));
                 managerState.activeFormDraft = { ...managerState.activeRequest };
             }
@@ -403,6 +430,7 @@ export function registerGeraeteverwaltungHandlers({ pageContent, getToken, redir
                 managerState.requests = await fetchReservationRequests(token);
                 managerState.activeRequest = null;
                 managerState.activeFormDraft = null;
+                managerState.isEditing = false;
                 managerState.deviceSelection = {
                     isOpen: false,
                     items: [],
@@ -422,11 +450,34 @@ export function registerGeraeteverwaltungHandlers({ pageContent, getToken, redir
                 managerState.requests = await fetchReservationRequests(token);
                 managerState.activeRequest = null;
                 managerState.activeFormDraft = null;
+                managerState.isEditing = false;
                 managerState.deviceSelection.selectedDevice = null;
             }
 
             if (action === 'edit-request') {
-                managerState.deviceSelection.error = 'Bearbeiten folgt im nächsten Schritt.';
+                if (!managerState.activeRequest) {
+                    return;
+                }
+
+                if (!managerState.isEditing) {
+                    managerState.isEditing = true;
+                    managerState.deviceSelection.error = null;
+                    return;
+                }
+
+                managerState.loading.action = true;
+                renderManagerView(root);
+
+                await updateReservationRequest(token, managerState.activeRequest.reservierungsNr, {
+                    ausleihdatum: managerState.activeFormDraft.ausleihdatum,
+                    rueckgabedatum: managerState.activeFormDraft.rueckgabedatum
+                });
+
+                managerState.requests = await fetchReservationRequests(token);
+                managerState.activeRequest = await fetchReservationRequestById(token, managerState.activeRequest.reservierungsNr);
+                managerState.activeFormDraft = { ...managerState.activeRequest };
+                managerState.isEditing = false;
+                managerState.deviceSelection.error = null;
             }
         } catch (error) {
             managerState.deviceSelection.error = error.message;
@@ -435,6 +486,15 @@ export function registerGeraeteverwaltungHandlers({ pageContent, getToken, redir
             managerState.deviceSelection.loading = false;
             renderManagerView(root);
         }
+    });
+
+    pageContent.addEventListener('input', (event) => {
+        const target = event.target.closest('[data-field-key]');
+        if (!target || !managerState.activeFormDraft || !managerState.isEditing) {
+            return;
+        }
+
+        managerState.activeFormDraft[target.dataset.fieldKey] = target.value;
     });
 
     const observer = new MutationObserver(async () => {

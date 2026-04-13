@@ -2,6 +2,7 @@ package studienprojekt.geraeteverwaltung.REST.Controller;
 
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.http.HttpServletRequest;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import org.springframework.http.HttpStatus;
@@ -10,6 +11,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -46,9 +48,9 @@ public class GeraeteverwaltimgReservierungsantraege {
 
     @GetMapping("/view-config")
     public ResponseEntity<?> getViewConfig(HttpServletRequest request) {
-        AppUser user = authenticatedGeraeteverwalter(request);
+        AppUser user = authenticatedManagerOrAdmin(request);
         if (user == null) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "Nur für Geräteverwalter verfügbar"));
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "Nur für Geräteverwalter oder Admin verfügbar"));
         }
 
         return ResponseEntity.ok(Map.of(
@@ -80,8 +82,8 @@ public class GeraeteverwaltimgReservierungsantraege {
 
     @GetMapping
     public ResponseEntity<?> getPendingReservationRequests(HttpServletRequest request) {
-        if (authenticatedGeraeteverwalter(request) == null) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "Nur für Geräteverwalter verfügbar"));
+        if (authenticatedManagerOrAdmin(request) == null) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "Nur für Geräteverwalter oder Admin verfügbar"));
         }
 
         List<Reservierung> reservierungen = dbaccessReservierungsverwaltung.findeOffeneReservierungen();
@@ -90,8 +92,8 @@ public class GeraeteverwaltimgReservierungsantraege {
 
     @GetMapping("/{reservierungsNr}")
     public ResponseEntity<?> getReservationRequest(@PathVariable Integer reservierungsNr, HttpServletRequest request) {
-        if (authenticatedGeraeteverwalter(request) == null) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "Nur für Geräteverwalter verfügbar"));
+        if (authenticatedManagerOrAdmin(request) == null) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "Nur für Geräteverwalter oder Admin verfügbar"));
         }
 
         Reservierung reservierung = dbaccessReservierungsverwaltung.sucheReservierung(reservierungsNr);
@@ -104,8 +106,8 @@ public class GeraeteverwaltimgReservierungsantraege {
 
     @GetMapping("/{reservierungsNr}/available-devices")
     public ResponseEntity<?> getAvailableDevices(@PathVariable Integer reservierungsNr, HttpServletRequest request) {
-        if (authenticatedGeraeteverwalter(request) == null) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "Nur für Geräteverwalter verfügbar"));
+        if (authenticatedManagerOrAdmin(request) == null) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "Nur für Geräteverwalter oder Admin verfügbar"));
         }
 
         Reservierung reservierung = dbaccessReservierungsverwaltung.sucheReservierung(reservierungsNr);
@@ -136,8 +138,8 @@ public class GeraeteverwaltimgReservierungsantraege {
             @RequestBody AcceptReservationRequest acceptRequest,
             HttpServletRequest request) {
 
-        if (authenticatedGeraeteverwalter(request) == null) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "Nur für Geräteverwalter verfügbar"));
+        if (authenticatedManagerOrAdmin(request) == null) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "Nur für Geräteverwalter oder Admin verfügbar"));
         }
 
         try {
@@ -161,8 +163,8 @@ public class GeraeteverwaltimgReservierungsantraege {
 
     @DeleteMapping("/{reservierungsNr}")
     public ResponseEntity<?> deleteReservationRequest(@PathVariable Integer reservierungsNr, HttpServletRequest request) {
-        if (authenticatedGeraeteverwalter(request) == null) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "Nur für Geräteverwalter verfügbar"));
+        if (authenticatedManagerOrAdmin(request) == null) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "Nur für Geräteverwalter oder Admin verfügbar"));
         }
 
         boolean geloescht = dbaccessReservierungsverwaltung.loescheFremdeReservierung(reservierungsNr);
@@ -187,7 +189,34 @@ public class GeraeteverwaltimgReservierungsantraege {
         );
     }
 
-    private AppUser authenticatedGeraeteverwalter(HttpServletRequest request) {
+    @PutMapping("/{reservierungsNr}")
+    public ResponseEntity<?> updateReservationRequest(
+            @PathVariable Integer reservierungsNr,
+            @RequestBody UpdateReservationRequest updateRequest,
+            HttpServletRequest request) {
+        if (authenticatedManagerOrAdmin(request) == null) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "Nur für Geräteverwalter oder Admin verfügbar"));
+        }
+
+        try {
+            Reservierung reservierung = dbaccessReservierungsverwaltung.bearbeiteFremdeReservierung(
+                    reservierungsNr,
+                    updateRequest.ausleihdatum(),
+                    updateRequest.rueckgabedatum()
+            );
+
+            return ResponseEntity.ok(Map.of(
+                    "message", "Reservierungsantrag wurde aktualisiert",
+                    "reservierungsNr", reservierung.getReservierungsNr()
+            ));
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().body(Map.of("error", ex.getMessage()));
+        } catch (IllegalStateException ex) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", ex.getMessage()));
+        }
+    }
+
+    private AppUser authenticatedManagerOrAdmin(HttpServletRequest request) {
         String authHeader = request.getHeader("Authorization");
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             return null;
@@ -206,9 +235,12 @@ public class GeraeteverwaltimgReservierungsantraege {
             return null;
         }
 
-        return user.getRole() == Role.GERAETE_VERWALTER ? user : null;
+        return user.getRole() == Role.GERAETE_VERWALTER || user.getRole() == Role.ADMIN ? user : null;
     }
 
     public record AcceptReservationRequest(Integer inventarNr) {
+    }
+
+    public record UpdateReservationRequest(LocalDate ausleihdatum, LocalDate rueckgabedatum) {
     }
 }
