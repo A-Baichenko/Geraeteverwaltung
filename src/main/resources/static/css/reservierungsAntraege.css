@@ -1,0 +1,107 @@
+.gv-manager-app {
+    position: relative;
+}
+
+.gv-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.gv-list,
+.gv-device-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.gv-item button {
+    width: 100%;
+    text-align: left;
+    border: 1px solid #d0d0d0;
+    border-radius: 6px;
+    padding: 0.6rem;
+    background: #fff;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+
+.gv-slide-panel {
+    border: 1px solid #d0d0d0;
+    border-radius: 8px;
+    padding: 0.8rem;
+    transform: translateY(-10px);
+    opacity: 0.5;
+    transition: all 160ms ease-in;
+}
+
+.gv-slide-panel.is-open {
+    transform: translateY(0);
+    opacity: 1;
+}
+
+.gv-fields {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.7rem;
+}
+
+.gv-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.gv-field input {
+    padding: 0.55rem;
+}
+
+.gv-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.55rem;
+    margin-top: 0.8rem;
+}
+
+.gv-device-overlay {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    background: #fff;
+    border: 1px solid #d0d0d0;
+    border-radius: 8px;
+    padding: 0.8rem;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
+    transform: translateY(-8px);
+    opacity: 0;
+    pointer-events: none;
+    transition: all 160ms ease-in;
+}
+
+.gv-device-overlay.is-open {
+    transform: translateY(0);
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.gv-device-overlay-header {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+}
+
+.back-button {
+    border: 1px solid #d0d0d0;
+    background: #fff;
+    border-radius: 6px;
+    padding: 0.45rem 0.65rem;
+}
+
+.error-text {
+    color: #8f1f1f;
+}
