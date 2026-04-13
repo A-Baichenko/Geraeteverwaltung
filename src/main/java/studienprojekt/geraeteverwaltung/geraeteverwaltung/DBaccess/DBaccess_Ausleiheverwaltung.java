@@ -60,6 +60,57 @@ public class DBaccess_Ausleiheverwaltung {
         return ausleihe;
     }
 
+    public Ausleihe nehmeReservierungAn(Integer reservierungsNr, Integer inventarNr, LocalDate tatsaechlichesAusleihdatum) {
+        Reservierung reservierung = em.find(Reservierung.class, reservierungsNr);
+        if (reservierung == null) {
+            throw new IllegalArgumentException("Reservierung nicht gefunden");
+        }
+
+        Geraet geraet = em.find(Geraet.class, inventarNr);
+        if (geraet == null) {
+            throw new IllegalArgumentException("Gerät nicht gefunden");
+        }
+
+        if (!geraet.isIstAusleihbar()) {
+            throw new IllegalStateException("Gerät ist nicht verleihbar");
+        }
+
+        if (!geraet.getGeraetetyp().getId().equals(reservierung.getGeraetetyp().getId())) {
+            throw new IllegalArgumentException("Gerätetyp des Geräts passt nicht zur Reservierung");
+        }
+
+        Long vorhandeneAusleihe = em.createQuery(
+                        "SELECT COUNT(a) FROM Ausleihe a WHERE a.reservierung.reservierungsNr = :reservierungsNr",
+                        Long.class)
+                .setParameter("reservierungsNr", reservierungsNr)
+                .getSingleResult();
+
+        if (vorhandeneAusleihe > 0) {
+            throw new IllegalStateException("Reservierung wurde bereits angenommen");
+        }
+
+        LocalDate ausleihdatum = reservierung.getAusleihdatum();
+        LocalDate rueckgabedatum = reservierung.getRueckgabedatum();
+
+        Long blockierendeAusleihen = em.createQuery(
+                        "SELECT COUNT(a) FROM Ausleihe a WHERE a.geraet.inventarNr = :inventarNr " +
+                                "AND a.ausleihdatum <= :bis " +
+                                "AND COALESCE(a.tatsaechlichesRueckgabedatum, a.vereinbartesRueckgabedatum) >= :von", Long.class)
+                .setParameter("inventarNr", inventarNr)
+                .setParameter("von", ausleihdatum)
+                .setParameter("bis", rueckgabedatum)
+                .getSingleResult();
+
+        if (blockierendeAusleihen > 0) {
+            throw new IllegalStateException("Gerät ist im Reservierungszeitraum nicht verfügbar");
+        }
+
+        LocalDate wirksamesAusleihdatum = tatsaechlichesAusleihdatum != null ? tatsaechlichesAusleihdatum : ausleihdatum;
+        Ausleihe ausleihe = reservierung.erstelleAusleihe(geraet, wirksamesAusleihdatum, rueckgabedatum);
+        em.persist(ausleihe);
+        return ausleihe;
+    }
+
     public Ausleihe gibGeraetZurueck(Integer ausleiheNr, LocalDate rueckgabeDatum) {
         Ausleihe ausleihe = em.find(Ausleihe.class, ausleiheNr);
         if (ausleihe == null) {
@@ -97,4 +148,6 @@ public class DBaccess_Ausleiheverwaltung {
 
         return null;
     }
+
+
 }

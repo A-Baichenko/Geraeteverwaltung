@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import studienprojekt.geraeteverwaltung.geraeteverwaltung.DBaccess.entity.Geraet;
 import studienprojekt.geraeteverwaltung.geraeteverwaltung.DBaccess.entity.Geraetetyp;
 import studienprojekt.geraeteverwaltung.geraeteverwaltung.DBaccess.entity.Reservierung;
 import studienprojekt.geraeteverwaltung.mitarbeiterverwalten.DBaccess.entity.Mitarbeiter;
@@ -106,6 +107,37 @@ public class DBaccess_Reservierungsverwaltung {
                 .getResultList();
     }
 
+    public List<Reservierung> findeOffeneReservierungen() {
+        return em.createQuery(
+                        "SELECT r FROM Reservierung r " +
+                                "JOIN FETCH r.geraetetyp " +
+                                "JOIN FETCH r.mitarbeiter " +
+                                "WHERE NOT EXISTS (" +
+                                "SELECT a.ausleiheNr FROM Ausleihe a WHERE a.reservierung = r" +
+                                ") ORDER BY r.ausleihdatum ASC",
+                        Reservierung.class)
+                .getResultList();
+    }
+
+    public List<Geraet> findeVerfuegbareGeraeteFuerReservierung(Reservierung reservierung) {
+        return em.createQuery(
+                        "SELECT g FROM Geraet g " +
+                                "WHERE g.istAusleihbar = true " +
+                                "AND g.geraetetyp.id = :geraetetypId " +
+                                "AND NOT EXISTS (" +
+                                "SELECT a.ausleiheNr FROM Ausleihe a " +
+                                "WHERE a.geraet = g " +
+                                "AND a.ausleihdatum <= :rueckgabe " +
+                                "AND COALESCE(a.tatsaechlichesRueckgabedatum, a.vereinbartesRueckgabedatum) >= :ausleihe" +
+                                ") " +
+                                "ORDER BY g.inventarNr ASC",
+                        Geraet.class)
+                .setParameter("geraetetypId", reservierung.getGeraetetyp().getId())
+                .setParameter("ausleihe", reservierung.getAusleihdatum())
+                .setParameter("rueckgabe", reservierung.getRueckgabedatum())
+                .getResultList();
+    }
+
     public List<Zeitraum> findeNichtVerfuegbareZeitraeume(Long geraetetypId,
                                                           LocalDate start,
                                                           LocalDate ende,
@@ -138,7 +170,7 @@ public class DBaccess_Reservierungsverwaltung {
         }
 
         List<Zeitraum> zeitraeume = new ArrayList<>();
-        LocalDate von = blockierteTage.get(0);
+        LocalDate von = blockierteTage.getFirst();
         LocalDate bis = von;
 
         for (int i = 1; i < blockierteTage.size(); i++) {
