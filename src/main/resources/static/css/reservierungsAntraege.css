@@ -2,6 +2,56 @@
     position: relative;
 }
 
+.gv-accordion-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.gv-accordion-section {
+    border: 1px solid #d0d0d0;
+    border-radius: 8px;
+    background: #fff;
+    overflow: hidden;
+}
+
+.gv-accordion-section:last-child {
+    grid-column: 1 / -1;
+}
+
+.gv-accordion-trigger {
+    width: 100%;
+    border: 0;
+    border-bottom: 1px solid #d0d0d0;
+    background: #f7f7f7;
+    padding: 0.75rem 0.9rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.gv-chevron {
+    transition: transform 150ms ease;
+}
+
+.gv-accordion-section.is-open .gv-chevron {
+    transform: rotate(180deg);
+}
+
+.gv-accordion-content {
+    max-height: 0;
+    overflow: hidden;
+    padding: 0 0.9rem;
+    transition: max-height 180ms ease;
+}
+
+.gv-accordion-section.is-open .gv-accordion-content {
+    max-height: 1000px;
+    padding: 0.9rem;
+}
+
 .gv-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -46,7 +96,7 @@
 
 .gv-fields {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr;
     gap: 0.7rem;
 }
 
@@ -67,39 +117,58 @@
     margin-top: 0.8rem;
 }
 
-.gv-device-overlay {
-    position: absolute;
-    left: 0;
-    right: 0;
-    top: 0;
+.gv-device-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.35);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    z-index: 50;
+}
+
+.gv-device-modal.is-open {
+    display: flex;
+}
+
+.gv-device-modal-card {
+    width: min(560px, 100%);
+    max-height: 80vh;
+    overflow: auto;
     background: #fff;
-    border: 1px solid #d0d0d0;
     border-radius: 8px;
-    padding: 0.8rem;
-    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
-    transform: translateY(-8px);
-    opacity: 0;
-    pointer-events: none;
-    transition: all 160ms ease-in;
+    border: 1px solid #d0d0d0;
+    padding: 0.9rem;
 }
 
-.gv-device-overlay.is-open {
-    transform: translateY(0);
-    opacity: 1;
-    pointer-events: auto;
-}
-
-.gv-device-overlay-header {
+.gv-device-modal-header {
     display: flex;
     align-items: center;
-    gap: 0.8rem;
+    justify-content: space-between;
 }
 
-.back-button {
+.device-option {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    padding: 0.5rem;
+}
+
+.gv-device-modal-actions {
+    margin-top: 0.8rem;
+    display: flex;
+    gap: 0.6rem;
+    justify-content: flex-end;
+}
+
+.icon-button {
     border: 1px solid #d0d0d0;
     background: #fff;
     border-radius: 6px;
-    padding: 0.45rem 0.65rem;
+    padding: 0.2rem 0.5rem;
 }
 
 .error-text {

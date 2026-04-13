@@ -10,7 +10,7 @@ public final class GeraeteverwaltungHtml {
                 <section id="geraeteverwaltung-reservation-requests" data-module="geraeteverwalten-reservierungsantraege">
                     <header class="section-header">
                         <h2>Geräteverwalten → Reservierungsanträge annehmen</h2>
-                        <p class="section-subtitle">Ansicht wird rollen- und backendgesteuert geladen.</p>
+                        <p class="section-subtitle">Basisstruktur ist sichtbar. Aktuell ist nur der Bereich „Reservierungsanträge“ aktiv.</p>
                     </header>
                     <div id="gv-manager-app" class="gv-manager-app"></div>
                 </section>
