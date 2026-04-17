@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 import studienprojekt.geraeteverwaltung.raumverwaltung.DBaccess.entity.Raum;
 
 @Service
+@Transactional
 public class DBaccess_Raumverwaltung {
 
     @PersistenceContext
