@@ -10,6 +10,7 @@ import studienprojekt.geraeteverwaltung.mitarbeiterverwalten.DBaccess.entity.Anr
 import studienprojekt.geraeteverwaltung.mitarbeiterverwalten.DBaccess.entity.Mitarbeiter;
 
 @Service
+@Transactional
 public class DBaccess_Mitarbeiterverwaltung {
 
     @PersistenceContext
