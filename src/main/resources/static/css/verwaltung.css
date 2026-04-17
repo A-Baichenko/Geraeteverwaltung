@@ -1,0 +1,101 @@
+.management-layout {
+    display: grid;
+    grid-template-columns: minmax(280px, 380px) minmax(320px, 520px);
+    gap: 1rem;
+    align-items: start;
+}
+
+.management-panel {
+    border: 2px solid #111827;
+    border-radius: 8px;
+    background: #fff;
+    padding: 0.9rem;
+    min-height: 60vh;
+}
+
+.management-panel h2 {
+    margin: 0 0 0.7rem;
+}
+
+.management-form-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.4rem;
+}
+
+.management-form-grid label {
+    font-weight: 600;
+}
+
+.management-form-grid input,
+.management-form-grid select,
+.management-panel > input[type="search"] {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 0.45rem 0.55rem;
+    border: 2px solid #111827;
+    border-radius: 6px;
+}
+
+.management-actions {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 1rem;
+}
+
+.management-actions button,
+.management-item-actions button {
+    border: 2px solid #111827;
+    border-radius: 6px;
+    background: #fff;
+    padding: 0.4rem 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.management-hint {
+    min-height: 1.2rem;
+    margin: 0.8rem 0 0;
+    color: #374151;
+}
+
+.management-result-list {
+    list-style: none;
+    margin: 0.8rem 0 0;
+    padding: 0;
+    display: grid;
+    gap: 0.55rem;
+}
+
+.management-item {
+    border: 2px solid #111827;
+    border-radius: 6px;
+    background: #fff;
+    padding: 0.55rem;
+    display: flex;
+    justify-content: space-between;
+    gap: 0.7rem;
+    align-items: center;
+}
+
+.management-item small {
+    display: block;
+    color: #4b5563;
+    margin-top: 0.2rem;
+}
+
+.management-item-actions {
+    display: flex;
+    gap: 0.35rem;
+    flex-wrap: wrap;
+}
+
+@media (max-width: 960px) {
+    .management-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .management-panel {
+        min-height: auto;
+    }
+}
