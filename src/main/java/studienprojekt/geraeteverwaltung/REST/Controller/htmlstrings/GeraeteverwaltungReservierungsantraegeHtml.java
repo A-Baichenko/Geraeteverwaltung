@@ -165,12 +165,97 @@ public final class GeraeteverwaltungReservierungsantraegeHtml {
                         <div class="gv-accordion-content"><p class="placeholder">Bereich vorhanden, Funktion folgt später.</p></div>
                     </section>
 
-                    <section class="gv-accordion-section" data-section="lend">
-                        <button type="button" class="gv-accordion-trigger" data-action="toggle-section" data-section-key="lend">
-                            <span>Ausleihe</span><span class="gv-chevron">▾</span>
-                        </button>
-                        <div class="gv-accordion-content"><p class="placeholder">Bereich vorhanden, Funktion folgt später.</p></div>
-                    </section>
+                    <section class="al-accordion-section" data-section="lend">
+                                  <button type="button" class="al-accordion-trigger" data-action="toggle-section" data-section-key="lend">
+                                      <span>Ausleihe</span><span class="al-chevron">▾</span>
+                                  </button>
+                                  <div class="al-accordion-content">
+                                      <p id="al-global-message" class="al-error-text"></p>
+                
+                                      <div class="al-grid">
+                                          <section>
+                                              <h3>Ausleihen</h3>
+                
+                                              <div class="al-fields">
+                                                  <label class="al-field">
+                                                      <span>Ausleihdatum:</span>
+                                                      <input id="al-lend-date"
+                                                             name="lendDate"
+                                                             type="date">
+                                                  </label>
+                
+                                                  <label class="al-field">
+                                                      <span>Rückgabedatum:</span>
+                                                      <div class="al-picker-field">
+                                                          <input id="al-return-date"
+                                                                 name="returnDate"
+                                                                 type="date">
+                                                      </div>
+                                                  </label>
+                
+                                                  <label class="al-field">
+                                                      <span>Gerät:</span>
+                                                      <div class="al-picker-field">
+                                                          <input id="al-device-type"
+                                                                 name="deviceType"
+                                                                 type="text"
+                                                                 placeholder="Gerät auswählen"
+                                                                 readonly>
+                                                          <button type="button"
+                                                                  class="al-icon-button"
+                                                                  data-action="open-lend-search"
+                                                                  data-search-target="deviceType"
+                                                                  aria-label="Gerät auswählen">⌕</button>
+                                                      </div>
+                                                  </label>
+                
+                                                  <label class="al-field">
+                                                      <span>Mitarbeiter:</span>
+                                                      <div class="al-picker-field">
+                                                          <input id="al-employee"
+                                                                 name="employee"
+                                                                 type="text"
+                                                                 placeholder="Mitarbeiter auswählen"
+                                                                 readonly>
+                                                          <button type="button"
+                                                                  class="al-icon-button"
+                                                                  data-action="open-lend-search"
+                                                                  data-search-target="employee"
+                                                                  aria-label="Mitarbeiter auswählen">⌕</button>
+                                                      </div>
+                                                  </label>
+                                              </div>
+                
+                                              <div class="al-actions">
+                                                  <button type="button" data-action="create-lend">OK</button>
+                                                  <button type="button" class="al-secondary-button" data-action="reset-lend">Zurücksetzen</button>
+                                              </div>
+                                          </section>
+                
+                                          <section id="al-search-panel" class="al-slide-panel">
+                                              <div class="al-panel-header">
+                                                  <h3>Suche</h3>
+                                                  <button type="button"
+                                                          class="al-icon-button"
+                                                          data-action="close-lend-search">✕</button>
+                                              </div>
+                
+                                              <p id="al-search-title" class="al-section-subtitle">Suche</p>
+                
+                                              <div class="al-search-box">
+                                                  <input id="al-search-input"
+                                                         name="lendSearch"
+                                                         type="text"
+                                                         placeholder="Filter eingeben">
+                                              </div>
+                
+                                              <ul id="al-search-results" class="al-list"></ul>
+                                              <p id="al-search-error" class="al-error-text"></p>
+                                              <p id="al-search-placeholder" class="al-placeholder">Noch keine Einträge vorhanden.</p>
+                                          </section>
+                                      </div>
+                                  </div>
+                              </section>
 
                     <section class="gv-accordion-section" data-section="lendOverview">
                         <button type="button" class="gv-accordion-trigger" data-action="toggle-section" data-section-key="lendOverview">
