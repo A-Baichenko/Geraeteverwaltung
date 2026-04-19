@@ -1,0 +1,287 @@
+.ga-manager-app {
+    position: relative;
+}
+
+.ga-accordion-layout {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    align-items: start;
+}
+
+.ga-accordion-section {
+    border: 1px solid #d0d0d0;
+    border-radius: 8px;
+    background: #fff;
+    overflow: hidden;
+}
+
+.ga-accordion-trigger {
+    width: 100%;
+    border: 0;
+    border-bottom: 1px solid #d0d0d0;
+    background: #f7f7f7;
+    padding: 0.75rem 0.9rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.ga-chevron {
+    transition: transform 150ms ease;
+}
+
+.ga-accordion-section.is-open .ga-chevron {
+    transform: rotate(180deg);
+}
+
+.ga-accordion-content {
+    max-height: 0;
+    overflow: hidden;
+    padding: 0 0.9rem;
+    transition: max-height 180ms ease;
+}
+
+.ga-accordion-section.is-open .ga-accordion-content {
+    max-height: 1200px;
+    padding: 0.9rem;
+}
+
+.ga-grid {
+    display: grid;
+    grid-template-columns: minmax(320px, 1.6fr) minmax(260px, 0.9fr);
+    gap: 1rem;
+    align-items: start;
+}
+
+.ga-fields {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.9rem;
+}
+
+.ga-field {
+    display: grid;
+    grid-template-columns: 170px 1fr;
+    gap: 0.8rem;
+    align-items: center;
+}
+
+.ga-field > span {
+    font-weight: 500;
+}
+
+.ga-field input,
+.ga-field select {
+    width: 100%;
+    border: 1px solid #cfcfcf;
+    border-radius: 4px;
+    padding: 0.55rem 0.8rem;
+    background: #fff;
+    box-sizing: border-box;
+}
+
+.ga-field input[readonly] {
+    background: #fafafa;
+}
+
+.ga-picker-field {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 0;
+    align-items: stretch;
+}
+
+.ga-picker-field input {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+.ga-picker-field .ga-icon-button {
+    border-left: 0;
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    min-width: 44px;
+}
+
+.ga-checkbox-field {
+    grid-template-columns: 170px auto;
+}
+
+.ga-checkbox-field input[type="checkbox"] {
+    width: 22px;
+    height: 22px;
+    margin: 0;
+    border-radius: 4px;
+    padding: 0;
+}
+
+.ga-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.55rem;
+    margin-top: 1rem;
+}
+
+.ga-actions button,
+.ga-search-box button {
+    border: 1px solid #d0d0d0;
+    border-radius: 6px;
+    background: #fff;
+    padding: 0.55rem 0.9rem;
+    cursor: pointer;
+}
+
+.ga-secondary-button {
+    background: #f7f7f7;
+}
+
+.ga-slide-panel {
+    border: 1px solid #d0d0d0;
+    border-radius: 8px;
+    padding: 0.8rem;
+    min-height: 100%;
+    transform: translateY(-10px);
+    opacity: 0.5;
+    transition: all 160ms ease-in;
+    background: #fff;
+}
+
+.ga-slide-panel.is-open {
+    transform: translateY(0);
+    opacity: 1;
+}
+
+.ga-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 0.8rem;
+}
+
+.ga-search-box {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 0;
+    margin-bottom: 0.8rem;
+}
+
+.ga-search-box input {
+    border: 1px solid #cfcfcf;
+    border-right: 0;
+    border-radius: 6px 0 0 6px;
+    padding: 0.55rem 0.75rem;
+    box-sizing: border-box;
+}
+
+.ga-search-box button {
+    border-radius: 0 6px 6px 0;
+}
+
+.ga-list,
+.ga-device-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.ga-item button {
+    width: 100%;
+    text-align: left;
+    border: 1px solid #d0d0d0;
+    border-radius: 6px;
+    padding: 0.6rem;
+    background: #fff;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    cursor: pointer;
+}
+
+.ga-item button:hover {
+    background: #f8f8f8;
+}
+
+.ga-device-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.35);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    z-index: 50;
+}
+
+.ga-device-modal.is-open {
+    display: flex;
+}
+
+.ga-device-modal-card {
+    width: min(560px, 100%);
+    max-height: 80vh;
+    overflow: auto;
+    background: #fff;
+    border-radius: 8px;
+    border: 1px solid #d0d0d0;
+    padding: 0.9rem;
+}
+
+.ga-device-option {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    padding: 0.5rem;
+}
+
+.ga-device-modal-actions {
+    margin-top: 0.8rem;
+    display: flex;
+    gap: 0.6rem;
+    justify-content: flex-end;
+}
+
+.ga-icon-button {
+    border: 1px solid #d0d0d0;
+    background: #fff;
+    border-radius: 6px;
+    padding: 0.2rem 0.5rem;
+    cursor: pointer;
+}
+
+.ga-error-text {
+    color: #8f1f1f;
+    margin: 0 0 0.75rem 0;
+}
+
+.ga-placeholder {
+    color: #666;
+    font-style: italic;
+}
+
+.ga-section-subtitle {
+    color: #666;
+    margin: 0 0 0.75rem 0;
+}
+
+@media (max-width: 900px) {
+    .ga-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .ga-field {
+        grid-template-columns: 1fr;
+    }
+
+    .ga-checkbox-field {
+        grid-template-columns: 1fr;
+    }
+}
