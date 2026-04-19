@@ -122,36 +122,19 @@ public class GeraeteanlegenController {
                     .body(Map.of("error", "Nur für Geräteverwalter oder Admin verfügbar"));
         }
 
-        if (query == null || query.isBlank()) {
-            return ResponseEntity.ok(List.of());
-        }
+        List<Mitarbeiter> results = dbaccessMitarbeiterverwaltung.findeMitarbeiterNachFilter(query);
 
-        Mitarbeiter mitarbeiter = null;
-
-        try {
-            Integer personalNr = Integer.valueOf(query);
-            mitarbeiter = dbaccessMitarbeiterverwaltung.sucheMitarbeiter(personalNr);
-        } catch (NumberFormatException ex) {
-            try {
-                mitarbeiter = dbaccessMitarbeiterverwaltung.findeNachName(query);
-            } catch (IllegalArgumentException ex2) {
-                mitarbeiter = null;
-            }
-        }
-
-        if (mitarbeiter == null) {
-            return ResponseEntity.ok(List.of());
-        }
-
-        return ResponseEntity.ok(List.of(
-                Map.of(
-                        "id", mitarbeiter.getPersonalNr(),
-                        "label", mitarbeiter.getVorname() + " " + mitarbeiter.getNachname(),
-                        "personalNr", mitarbeiter.getPersonalNr(),
-                        "vorname", mitarbeiter.getVorname(),
-                        "nachname", mitarbeiter.getNachname()
-                )
-        ));
+        return ResponseEntity.ok(
+                results.stream()
+                        .map(mitarbeiter -> Map.of(
+                                "id", mitarbeiter.getPersonalNr(),
+                                "label", mitarbeiter.getAnrede().name() + " " + mitarbeiter.getVorname() + " " + mitarbeiter.getNachname(),
+                                "personalNr", mitarbeiter.getPersonalNr(),
+                                "vorname", mitarbeiter.getVorname(),
+                                "nachname", mitarbeiter.getNachname()
+                        ))
+                        .toList()
+        );
     }
 
     @GetMapping("/rooms")
@@ -200,6 +183,11 @@ public class GeraeteanlegenController {
             }
             if (createRequest.geraetetypId() == null) {
                 return ResponseEntity.badRequest().body(Map.of("error", "Gerätetyp ist erforderlich"));
+            }
+
+            if (dbaccessGeraeteverwaltung.sucheGeraet(createRequest.inventarNr()) != null) {
+                return ResponseEntity.status(HttpStatus.CONFLICT)
+                        .body(Map.of("error", "Ein Gerät mit dieser Inventar-Nr. existiert bereits"));
             }
 
             Geraetetyp geraetetyp = dbaccessGeraeteverwaltung.sucheGeraetetypById(createRequest.geraetetypId());
@@ -253,6 +241,10 @@ public class GeraeteanlegenController {
             return ResponseEntity.badRequest().body(Map.of("error", ex.getMessage()));
         } catch (IllegalStateException ex) {
             return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", ex.getMessage()));
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(
+                    "error", "Gerät konnte nicht gespeichert werden. Prüfe die Eingaben oder ob die Inventar-Nr. bereits existiert."
+            ));
         }
     }
 

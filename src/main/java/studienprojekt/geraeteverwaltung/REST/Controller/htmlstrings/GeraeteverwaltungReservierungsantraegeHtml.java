@@ -24,22 +24,24 @@ public final class GeraeteverwaltungReservierungsantraegeHtml {
                                             <span>Inventar-Nr.:</span>
                                             <input id="ga-create-inventory-number"
                                                    name="inventoryNumber"
-                                                   type="text">
-                                                   placeholder="Filter eingeben">
+                                                   type="text"
+                                                   placeholder="z. B. 1001">
                                         </label>
 
                                         <label class="ga-field">
                                             <span>Serien-Nr.:</span>
                                             <input id="ga-create-serial-number"
                                                    name="serialNumber"
-                                                   type="text">
+                                                   type="text"
+                                                   placeholder="z. B. 555123">
                                         </label>
 
                                         <label class="ga-field">
                                             <span>Kaufdatum:</span>
                                             <input id="ga-create-purchase-date"
                                                    name="purchaseDate"
-                                                   type="date">
+                                                   type="date"
+                                                   placeholder="tt.mm.jjjj">
                                         </label>
 
                                         <label class="ga-field">
@@ -48,12 +50,13 @@ public final class GeraeteverwaltungReservierungsantraegeHtml {
                                                 <input id="ga-create-device-type"
                                                        name="deviceType"
                                                        type="text"
+                                                       placeholder="Gerätetyp auswählen"
                                                        readonly>
                                                 <button type="button"
                                                         class="ga-icon-button"
                                                         data-action="open-create-search"
                                                         data-search-target="deviceType"
-                                                        aria-label="Gerätetyp suchen">⌕</button>
+                                                        aria-label="Gerätetyp auswählen">⌕</button>
                                             </div>
                                         </label>
 
@@ -65,32 +68,34 @@ public final class GeraeteverwaltungReservierungsantraegeHtml {
                                         </label>
 
                                         <label class="ga-field">
-                                            <span>Mitarbeiter:</span>
+                                            <span>Mitarbeiter (optional):</span>
                                             <div class="ga-picker-field">
                                                 <input id="ga-create-employee"
                                                        name="employee"
                                                        type="text"
+                                                       placeholder="Optional: Mitarbeiter auswählen"
                                                        readonly>
                                                 <button type="button"
                                                         class="ga-icon-button"
                                                         data-action="open-create-search"
                                                         data-search-target="employee"
-                                                        aria-label="Mitarbeiter suchen">⌕</button>
+                                                        aria-label="Mitarbeiter auswählen">⌕</button>
                                             </div>
                                         </label>
 
                                         <label class="ga-field">
-                                            <span>Raum:</span>
+                                            <span>Raum (optional):</span>
                                             <div class="ga-picker-field">
                                                 <input id="ga-create-room"
                                                        name="room"
                                                        type="text"
+                                                       placeholder="Optional: Raum auswählen"
                                                        readonly>
                                                 <button type="button"
                                                         class="ga-icon-button"
                                                         data-action="open-create-search"
                                                         data-search-target="room"
-                                                        aria-label="Raum suchen">⌕</button>
+                                                        aria-label="Raum auswählen">⌕</button>
                                             </div>
                                         </label>
                                     </div>
@@ -102,26 +107,26 @@ public final class GeraeteverwaltungReservierungsantraegeHtml {
                                 </section>
 
                                 <section id="ga-create-search-panel" class="ga-slide-panel">
-                                              <div class="ga-panel-header">
-                                                  <h3>Suche</h3>
-                                                  <button type="button"
-                                                          class="ga-icon-button"
-                                                          data-action="close-create-search">✕</button>
-                                              </div>
-                
-                                              <p id="ga-create-search-title" class="ga-section-subtitle">Suche</p>
-                
-                                              <div class="ga-search-box">
-                                                  <input id="ga-create-search-input"
-                                                         name="createSearch"
-                                                         type="text"
-                                                         placeholder="Filter eingeben">
-                                              </div>
-                
-                                              <ul id="ga-create-search-results" class="ga-list"></ul>
-                                              <p id="ga-create-search-error" class="ga-error-text"></p>
-                                              <p id="ga-create-search-placeholder" class="ga-placeholder">Noch keine Einträge vorhanden.</p>
-                                          </section>
+                                    <div class="ga-panel-header">
+                                        <h3>Suche</h3>
+                                        <button type="button"
+                                                class="ga-icon-button"
+                                                data-action="close-create-search">✕</button>
+                                    </div>
+
+                                    <p id="ga-create-search-title" class="ga-section-subtitle">Suche</p>
+
+                                    <div class="ga-search-box">
+                                        <input id="ga-create-search-input"
+                                               name="createSearch"
+                                               type="text"
+                                               placeholder="Filter eingeben">
+                                    </div>
+
+                                    <ul id="ga-create-search-results" class="ga-list"></ul>
+                                    <p id="ga-create-search-error" class="ga-error-text"></p>
+                                    <p id="ga-create-search-placeholder" class="ga-placeholder">Noch keine Einträge vorhanden.</p>
+                                </section>
                             </div>
                         </div>
                     </section>

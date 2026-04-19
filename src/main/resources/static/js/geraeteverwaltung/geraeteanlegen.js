@@ -9,6 +9,7 @@ const createDeviceState = {
         search: false
     },
     error: null,
+    success: false,
     searchError: null,
     searchResults: []
 };
@@ -126,6 +127,7 @@ function resetCreateForm(root) {
     createDeviceState.currentSearchTarget = null;
     createDeviceState.searchResults = [];
     createDeviceState.error = null;
+    createDeviceState.success = false;
     createDeviceState.searchError = null;
 }
 
@@ -178,6 +180,8 @@ function renderCreateDeviceView(root) {
     if (errorNode) {
         errorNode.textContent = createDeviceState.error || '';
         errorNode.style.display = createDeviceState.error ? 'block' : 'none';
+        errorNode.classList.toggle('ga-success-text', Boolean(createDeviceState.success));
+        errorNode.classList.toggle('ga-error-text', !createDeviceState.success);
     }
 
     const searchErrorNode = root.querySelector('#ga-create-search-error');
@@ -302,8 +306,10 @@ async function initializeCreateDevicesFlow(token, getState, pageContent) {
     try {
         await fetchCreateDevicesViewConfig(token);
         createDeviceState.error = null;
+        createDeviceState.success = false;
     } catch (error) {
         createDeviceState.error = error.message;
+        createDeviceState.success = false;
     }
 
     createDeviceState.openSection = '';
@@ -367,6 +373,8 @@ export function registerGeraeteanlegenHandlers({ pageContent, getToken, redirect
                 createDeviceState.currentSearchTarget = target.dataset.searchTarget;
                 createDeviceState.searchResults = [];
                 createDeviceState.searchError = null;
+                createDeviceState.error = null;
+                createDeviceState.success = false;
                 createDeviceState.openSection = 'createDevices';
 
                 const searchInput = root.querySelector('#ga-create-search-input');
@@ -429,23 +437,27 @@ export function registerGeraeteanlegenHandlers({ pageContent, getToken, redirect
                 const validationError = validatePayload(payload);
                 if (validationError) {
                     createDeviceState.error = validationError;
+                    createDeviceState.success = false;
                     renderCreateDeviceView(root);
                     return;
                 }
 
                 createDeviceState.loading.action = true;
                 createDeviceState.error = null;
+                createDeviceState.success = false;
                 renderCreateDeviceView(root);
 
                 const result = await submitCreateDevice(token, payload);
 
                 resetCreateForm(root);
                 createDeviceState.error = result.message || 'Gerät wurde angelegt.';
+                createDeviceState.success = true;
                 renderCreateDeviceView(root);
                 return;
             }
         } catch (error) {
             createDeviceState.error = error.message;
+            createDeviceState.success = false;
             renderCreateDeviceView(root);
         } finally {
             createDeviceState.loading.action = false;
