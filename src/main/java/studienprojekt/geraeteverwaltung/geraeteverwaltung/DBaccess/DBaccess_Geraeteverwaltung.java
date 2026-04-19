@@ -81,6 +81,10 @@ public class DBaccess_Geraeteverwaltung {
         return list.isEmpty() ? null : list.get(0);
     }
 
+    public Geraetetyp sucheGeraetetypById(Long id) {
+        return em.find(Geraetetyp.class, id);
+    }
+
     @Transactional(readOnly = true)
     public List<Geraetetyp> findeGeraetetypenNachFilter(String suchbegriff) {
         if (suchbegriff == null || suchbegriff.isBlank()) {
