@@ -285,3 +285,8 @@
         grid-template-columns: 1fr;
     }
 }
+
+.ga-success-text {
+    color: #1f7a35;
+    margin: 0 0 0.75rem 0;
+}
