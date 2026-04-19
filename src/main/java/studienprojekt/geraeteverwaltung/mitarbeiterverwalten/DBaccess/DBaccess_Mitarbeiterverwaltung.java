@@ -10,6 +10,7 @@ import studienprojekt.geraeteverwaltung.mitarbeiterverwalten.DBaccess.entity.Anr
 import studienprojekt.geraeteverwaltung.mitarbeiterverwalten.DBaccess.entity.Mitarbeiter;
 
 @Service
+@Transactional
 public class DBaccess_Mitarbeiterverwaltung {
 
     @PersistenceContext
@@ -68,5 +69,33 @@ public class DBaccess_Mitarbeiterverwaltung {
                 .getResultList();
 
         return treffer.isEmpty() ? null : treffer.getFirst();
+    }
+
+    @Transactional(readOnly = true)
+    public List<Mitarbeiter> findeAlleMitarbeiter() {
+        return entityManager.createQuery(
+                        "SELECT m FROM Mitarbeiter m ORDER BY m.nachname, m.vorname, m.personalNr",
+                        Mitarbeiter.class)
+                .getResultList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<Mitarbeiter> findeMitarbeiterNachFilter(String suchbegriff) {
+        if (suchbegriff == null || suchbegriff.isBlank()) {
+            return findeAlleMitarbeiter();
+        }
+
+        String filter = "%" + suchbegriff.toLowerCase() + "%";
+
+        return entityManager.createQuery(
+                        "SELECT m FROM Mitarbeiter m " +
+                                "WHERE LOWER(m.vorname) LIKE :filter " +
+                                "OR LOWER(m.nachname) LIKE :filter " +
+                                "OR STR(m.personalNr) LIKE :filter " +
+                                "OR LOWER(STR(m.anrede)) LIKE :filter " +
+                                "ORDER BY m.nachname, m.vorname, m.personalNr",
+                        Mitarbeiter.class)
+                .setParameter("filter", filter)
+                .getResultList();
     }
 }

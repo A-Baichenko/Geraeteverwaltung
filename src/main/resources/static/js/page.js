@@ -1,6 +1,8 @@
 import { registerReservierungAusleiheHandlers } from './reservierung.js';
 import { registerGeraeteverwaltungHandlers } from './geraeteverwaltung/reservierungsAntraege.js';
 import { registerGeraeteanlegenHandlers } from './geraeteverwaltung/geraeteanlegen.js';
+import { registerMitarbeiterverwaltungHandlers } from './mitarbeiterverwaltung.js';
+import { registerRaumverwaltungHandlers } from './raumverwaltung.js';
 
 const topNav = document.getElementById('topNav');
 const pageContent = document.getElementById('pageContent');
@@ -150,6 +152,26 @@ registerReservierungAusleiheHandlers({
 });
 
 registerGeraeteverwaltungHandlers({
+    pageContent,
+    getToken,
+    redirectToLogin,
+    getState: () => ({
+        activeTabKey,
+        allowedTabKeys
+    })
+});
+
+registerMitarbeiterverwaltungHandlers({
+    pageContent,
+    getToken,
+    redirectToLogin,
+    getState: () => ({
+        activeTabKey,
+        allowedTabKeys
+    })
+});
+
+registerRaumverwaltungHandlers({
     pageContent,
     getToken,
     redirectToLogin,
