@@ -16,6 +16,9 @@ public class Geraet {
     private LocalDate kaufdatum;
     private boolean istAusleihbar;
 
+    @Enumerated(EnumType.STRING)
+    private GeraetStatus status;
+
     @ManyToOne
     @JoinColumn(name = "geraetetyp_id", nullable = false)
     private Geraetetyp geraetetyp;
@@ -47,6 +50,7 @@ public class Geraet {
         this.kaufdatum = kaufdatum;
         this.istAusleihbar = istAusleihbar;
         this.geraetetyp = geraetetyp;
+        this.status = istAusleihbar ? GeraetStatus.VERFUEGBAR : GeraetStatus.WARTUNG_DEFEKT;
     }
 
     // Änderungsmethode
@@ -54,6 +58,13 @@ public class Geraet {
         this.serienNr = serienNr;
         this.kaufdatum = kaufdatum;
         this.istAusleihbar = istAusleihbar;
+        if (!istAusleihbar) {
+            this.status = GeraetStatus.WARTUNG_DEFEKT;
+        } else if (this.staendigerNutzer != null) {
+            this.status = GeraetStatus.FEST_ZUGEORDNET;
+        } else {
+            this.status = GeraetStatus.VERFUEGBAR;
+        }
     }
 
     // Zuweisungen (wichtig für Use-Cases)
@@ -66,6 +77,12 @@ public class Geraet {
         this.standort = standort;
     }
 
+    public void setGeraetetyp(Geraetetyp geraetetyp) {
+        if (geraetetyp == null) {
+            throw new IllegalArgumentException("Geraetetyp darf nicht null sein");
+        }
+        this.geraetetyp = geraetetyp;
+    }
     // Getter
 
     public Integer getInventarNr() {
@@ -94,5 +111,13 @@ public class Geraet {
 
     public Raum getStandort() {
         return standort;
+    }
+
+    public GeraetStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(GeraetStatus status) {
+        this.status = status;
     }
 }

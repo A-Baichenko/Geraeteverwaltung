@@ -268,7 +268,27 @@ public final class GeraeteverwaltungReservierungsantraegeHtml {
                         <button type="button" class="gv-accordion-trigger" data-action="toggle-section" data-section-key="deviceManagement">
                             <span>Geräteverwaltung</span><span class="gv-chevron">▾</span>
                         </button>
-                        <div class="gv-accordion-content"><p class="placeholder">Bereich vorhanden, Funktion folgt später.</p></div>
+                        <div class="gv-accordion-content">
+                                                    <p id="dm-global-error" class="error-text"></p>
+                                                    <div class="dm-toolbar">
+                                                        <label class="dm-toolbar-field">
+                                                            <span>Suche</span>
+                                                            <input id="dm-search-input" type="search" placeholder="Nach Gerätetyp oder Gerät suchen">
+                                                        </label>
+                                                        <label class="dm-toolbar-field">
+                                                            <span>Status</span>
+                                                            <select id="dm-status-filter">
+                                                                <option value="all">Alle</option>
+                                                                <option value="verfuegbar">Verfügbar</option>
+                                                                <option value="reserviert">Reserviert</option>
+                                                                <option value="ausgeliehen">Ausgeliehen</option>
+                                                                <option value="fest_zugeordnet">Fest zugeordnet</option>
+                                                                <option value="wartung_defekt">In Wartung / Defekt</option>
+                                                            </select>
+                                                        </label>
+                                                    </div>
+                                                    <div id="dm-tree" class="dm-tree"></div>
+                                                </div>
                     </section>
                 </div>
 
@@ -286,6 +306,48 @@ public final class GeraeteverwaltungReservierungsantraegeHtml {
                         </div>
                     </div>
                 </aside>
+                
+                <aside id="dm-device-modal" class="gv-device-modal">
+                                    <div class="gv-device-modal-card">
+                                        <div class="gv-device-modal-header">
+                                            <h3 id="dm-modal-title">Gerät bearbeiten</h3>
+                                            <button type="button" class="icon-button" data-action="dm-close-modal">✕</button>
+                                        </div>
+                                        <p id="dm-modal-error" class="error-text"></p>
+                                        <div id="dm-edit-form" class="gv-fields">
+                                            <label class="gv-field">
+                                                <span>Seriennummer</span>
+                                                <input id="dm-edit-serial-number" type="number" min="1">
+                                            </label>
+                                            <label class="gv-field">
+                                                <span>Kaufdatum</span>
+                                                <input id="dm-edit-purchase-date" type="date">
+                                            </label>
+                                            <label class="gv-field ga-checkbox-field">
+                                                <span>Ausleihbar</span>
+                                                <input id="dm-edit-lendable" type="checkbox">
+                                            </label>
+                                        </div>
+                                        <div id="dm-move-form" class="gv-fields">
+                                            <label class="gv-field">
+                                                <span>Gerätetyp</span>
+                                                <select id="dm-move-device-type"></select>
+                                            </label>
+                                            <label class="gv-field">
+                                                <span>Mitarbeiter</span>
+                                                <select id="dm-move-employee"></select>
+                                            </label>
+                                            <label class="gv-field">
+                                                <span>Raum</span>
+                                                <select id="dm-move-room"></select>
+                                            </label>
+                                        </div>
+                                        <div class="gv-device-modal-actions">
+                                            <button type="button" data-action="dm-save-modal">Speichern</button>
+                                            <button type="button" data-action="dm-close-modal">Abbrechen</button>
+                                        </div>
+                                    </div>
+                                </aside>
                 """;
     }
 }

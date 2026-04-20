@@ -119,6 +119,20 @@ public class DBaccess_Reservierungsverwaltung {
                 .getResultList();
     }
 
+    @Transactional(readOnly = true)
+    public List<Long> findeReservierteGeraetetypIds(LocalDate tag) {
+        LocalDate referenzTag = tag != null ? tag : LocalDate.now();
+        return em.createQuery(
+                        "SELECT DISTINCT r.geraetetyp.id FROM Reservierung r " +
+                                "WHERE r.ausleihdatum <= :tag AND r.rueckgabedatum >= :tag " +
+                                "AND NOT EXISTS (" +
+                                "SELECT a.ausleiheNr FROM Ausleihe a WHERE a.reservierung = r" +
+                                ")",
+                        Long.class)
+                .setParameter("tag", referenzTag)
+                .getResultList();
+    }
+
     public List<Geraet> findeVerfuegbareGeraeteFuerReservierung(Reservierung reservierung) {
         return em.createQuery(
                         "SELECT g FROM Geraet g " +

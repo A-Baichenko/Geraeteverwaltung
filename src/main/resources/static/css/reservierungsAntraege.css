@@ -175,3 +175,81 @@
 .error-text {
     color: #8f1f1f;
 }
+
+.dm-toolbar {
+    display: flex;
+    gap: 0.8rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.8rem;
+}
+
+.dm-toolbar-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    min-width: 220px;
+}
+
+.dm-toolbar input,
+.dm-toolbar select {
+    padding: 0.5rem;
+}
+
+.dm-tree {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.dm-level {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background: #fff;
+}
+
+.dm-row {
+    width: 100%;
+    border: 0;
+    background: #f8f8f8;
+    padding: 0.55rem 0.7rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+}
+
+.dm-type {
+    margin: 0.45rem;
+}
+
+.dm-device-list {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+    padding: 0.5rem;
+}
+
+.dm-device-card {
+    border: 1px solid #e2e2e2;
+    border-radius: 6px;
+    padding: 0.6rem;
+    display: flex;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
+.dm-device-main {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(170px, 1fr));
+    gap: 0.3rem 0.7rem;
+}
+
+.dm-device-actions {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.35rem;
+}
+
+.dm-status {
+    font-weight: 600;
+}

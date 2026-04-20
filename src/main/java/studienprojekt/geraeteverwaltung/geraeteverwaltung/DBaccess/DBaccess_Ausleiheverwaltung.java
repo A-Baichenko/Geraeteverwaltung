@@ -125,6 +125,18 @@ public class DBaccess_Ausleiheverwaltung {
         return em.find(Ausleihe.class, ausleiheNr);
     }
 
+    @Transactional(readOnly = true)
+    public List<Integer> findeAktivAusgelieheneInventarnummern(LocalDate tag) {
+        LocalDate referenzTag = tag != null ? tag : LocalDate.now();
+        return em.createQuery(
+                        "SELECT DISTINCT a.geraet.inventarNr FROM Ausleihe a " +
+                                "WHERE a.ausleihdatum <= :tag " +
+                                "AND COALESCE(a.tatsaechlichesRueckgabedatum, a.vereinbartesRueckgabedatum) >= :tag",
+                        Integer.class)
+                .setParameter("tag", referenzTag)
+                .getResultList();
+    }
+
     private Geraet ermittleFreiesGeraet(Long geraetetypId, LocalDate von, LocalDate bis) {
         List<Geraet> kandidaten = em.createQuery(
                         "SELECT g FROM Geraet g WHERE g.geraetetyp.id = :typId AND g.istAusleihbar = true", Geraet.class)
