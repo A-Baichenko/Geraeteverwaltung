@@ -61,6 +61,7 @@ class DBaccessReservierungsAusleiheTests {
 
         assertNotNull(ausleihe.getAusleiheNr());
         assertEquals(g.getInventarNr(), ausleihe.getGeraet().getInventarNr());
+        assertEquals(GeraetStatus.AUSGELIEHEN, ausleihe.getGeraet().getStatus());
 
         Ausleihe zurueckgegeben = ausleiheDb.gibGeraetZurueck(
                 ausleihe.getAusleiheNr(),
@@ -68,6 +69,7 @@ class DBaccessReservierungsAusleiheTests {
         );
 
         assertEquals(LocalDate.of(2026, 4, 18), zurueckgegeben.getTatsaechlichesRueckgabedatum());
+        assertEquals(GeraetStatus.VERFUEGBAR, zurueckgegeben.getGeraet().getStatus());
     }
 
     @Test
