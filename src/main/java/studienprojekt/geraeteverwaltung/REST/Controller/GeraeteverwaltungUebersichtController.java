@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import studienprojekt.geraeteverwaltung.REST.Service.JwtService;
+import studienprojekt.geraeteverwaltung.geraeteverwaltung.DBaccess.DBaccess_Ausleiheverwaltung;
 import studienprojekt.geraeteverwaltung.geraeteverwaltung.DBaccess.DBaccess_Geraeteverwaltung;
 import studienprojekt.geraeteverwaltung.geraeteverwaltung.DBaccess.entity.Geraet;
 import studienprojekt.geraeteverwaltung.geraeteverwaltung.DBaccess.entity.GeraetStatus;
@@ -36,6 +37,7 @@ import studienprojekt.geraeteverwaltung.raumverwaltung.DBaccess.entity.Raum;
 public class GeraeteverwaltungUebersichtController {
 
     private final DBaccess_Geraeteverwaltung dbaccessGeraeteverwaltung;
+    private final DBaccess_Ausleiheverwaltung dbaccessAusleiheverwaltung;
     private final DBaccess_Mitarbeiterverwaltung dbaccessMitarbeiterverwaltung;
     private final DBaccess_Raumverwaltung dbaccessRaumverwaltung;
     private final JwtService jwtService;
@@ -43,11 +45,13 @@ public class GeraeteverwaltungUebersichtController {
 
     public GeraeteverwaltungUebersichtController(
             DBaccess_Geraeteverwaltung dbaccessGeraeteverwaltung,
+            DBaccess_Ausleiheverwaltung dbaccessAusleiheverwaltung,
             DBaccess_Mitarbeiterverwaltung dbaccessMitarbeiterverwaltung,
             DBaccess_Raumverwaltung dbaccessRaumverwaltung,
             JwtService jwtService,
             DBaccess_AppUserverwaltung dbaccessAppUserverwaltung) {
         this.dbaccessGeraeteverwaltung = dbaccessGeraeteverwaltung;
+        this.dbaccessAusleiheverwaltung = dbaccessAusleiheverwaltung;
         this.dbaccessMitarbeiterverwaltung = dbaccessMitarbeiterverwaltung;
         this.dbaccessRaumverwaltung = dbaccessRaumverwaltung;
         this.jwtService = jwtService;
@@ -160,7 +164,9 @@ public class GeraeteverwaltungUebersichtController {
     }
 
     private List<Map<String, Object>> baueKategorien(String query, GeraetStatus statusFilter) {
-        dbaccessGeraeteverwaltung.synchronisiereStatus(LocalDate.now());
+        LocalDate heute = LocalDate.now();
+        dbaccessGeraeteverwaltung.synchronisiereStatus(heute);
+        Map<Integer, String> aktiveAusleiher = dbaccessAusleiheverwaltung.findeAktiveAusleiherJeInventar(heute);
         List<Geraet> geraete = dbaccessGeraeteverwaltung.findeGeraeteMitDetailsNachFilter(query, statusFilter);
 
         Map<Long, KategorieNode> kategorien = new LinkedHashMap<>();
@@ -184,9 +190,11 @@ public class GeraeteverwaltungUebersichtController {
             geraetData.put("inventarNr", geraet.getInventarNr());
             geraetData.put("serienNr", geraet.getSerienNr());
             geraetData.put("kaufdatum", geraet.getKaufdatum() != null ? geraet.getKaufdatum().toString() : "");
-            geraetData.put("mitarbeiter", geraet.getStaendigerNutzer() != null
-                    ? geraet.getStaendigerNutzer().getVorname() + " " + geraet.getStaendigerNutzer().getNachname()
-                    : "");
+            String mitarbeiterName = aktiveAusleiher.get(geraet.getInventarNr());
+            if (mitarbeiterName == null && geraet.getStaendigerNutzer() != null) {
+                mitarbeiterName = geraet.getStaendigerNutzer().getVorname() + " " + geraet.getStaendigerNutzer().getNachname();
+            }
+            geraetData.put("mitarbeiter", mitarbeiterName != null ? mitarbeiterName : "");
             geraetData.put("mitarbeiterPersonalNr", geraet.getStaendigerNutzer() != null ? geraet.getStaendigerNutzer().getPersonalNr() : null);
             geraetData.put("raum", geraet.getStandort() != null ? geraet.getStandort().getRaumNr() : null);
             geraetData.put("geraetetypId", geraet.getGeraetetyp().getId());

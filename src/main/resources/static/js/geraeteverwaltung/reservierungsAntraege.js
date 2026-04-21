@@ -556,6 +556,22 @@ export function registerGeraeteverwaltungHandlers({ pageContent, getToken, redir
 
                 const devicePayload = await fetchAvailableDevices(token, managerState.activeRequest.reservierungsNr);
                 managerState.deviceSelection.items = devicePayload.devices || [];
+                const preselectedInventarNr = Number(devicePayload.preselectedDeviceInventarNr);
+                if (preselectedInventarNr) {
+                    const matchingDevice = managerState.deviceSelection.items.find(
+                        (device) => Number(device.inventarNr) === preselectedInventarNr
+                    );
+                    if (matchingDevice) {
+                        managerState.deviceSelection.pendingDevice = {
+                            inventarNr: Number(matchingDevice.inventarNr),
+                            label: matchingDevice.label
+                        };
+                        managerState.deviceSelection.selectedDevice = {
+                            inventarNr: Number(matchingDevice.inventarNr),
+                            label: matchingDevice.label
+                        };
+                    }
+                }
             }
 
             if (action === 'choose-device-radio') {

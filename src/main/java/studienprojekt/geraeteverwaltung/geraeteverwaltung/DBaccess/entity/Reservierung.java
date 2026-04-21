@@ -22,24 +22,30 @@ public class Reservierung {
     @JoinColumn(name = "mitarbeiter_id", nullable = false)
     private Mitarbeiter mitarbeiter;
 
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "reserviertes_geraet_id", nullable = false)
+    private Geraet reserviertesGeraet;
+
     protected Reservierung() {
     }
 
     public Reservierung(LocalDate ausleihdatum,
                         LocalDate rueckgabedatum,
                         Geraetetyp geraetetyp,
-                        Mitarbeiter mitarbeiter) {
+                        Mitarbeiter mitarbeiter,
+                        Geraet reserviertesGeraet) {
         if (ausleihdatum == null || rueckgabedatum == null || rueckgabedatum.isBefore(ausleihdatum)) {
             throw new IllegalArgumentException("Ungültiger Reservierungszeitraum");
         }
-        if (geraetetyp == null || mitarbeiter == null) {
-            throw new IllegalArgumentException("Geraetetyp und Mitarbeiter sind Pflichtfelder");
+        if (geraetetyp == null || mitarbeiter == null || reserviertesGeraet == null) {
+            throw new IllegalArgumentException("Geraetetyp, Mitarbeiter und reserviertes Gerät sind Pflichtfelder");
         }
 
         this.ausleihdatum = ausleihdatum;
         this.rueckgabedatum = rueckgabedatum;
         this.geraetetyp = geraetetyp;
         this.mitarbeiter = mitarbeiter;
+        this.reserviertesGeraet = reserviertesGeraet;
     }
 
     public void aendere(LocalDate ausleihdatum, LocalDate rueckgabedatum) {
@@ -72,5 +78,16 @@ public class Reservierung {
 
     public Mitarbeiter getMitarbeiter() {
         return mitarbeiter;
+    }
+
+    public Geraet getReserviertesGeraet() {
+        return reserviertesGeraet;
+    }
+
+    public void setReserviertesGeraet(Geraet reserviertesGeraet) {
+        if (reserviertesGeraet == null) {
+            throw new IllegalArgumentException("Reserviertes Gerät darf nicht null sein");
+        }
+        this.reserviertesGeraet = reserviertesGeraet;
     }
 }

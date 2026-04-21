@@ -11,7 +11,9 @@ import studienprojekt.geraeteverwaltung.mitarbeiterverwalten.DBaccess.entity.Mit
 
 
 import java.time.LocalDate;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @Transactional
@@ -66,7 +68,14 @@ public class DBaccess_Ausleiheverwaltung {
             throw new IllegalArgumentException("Reservierung nicht gefunden");
         }
 
-        Geraet geraet = em.find(Geraet.class, inventarNr);
+        Integer wirksameInventarNr = inventarNr != null
+                ? inventarNr
+                : (reservierung.getReserviertesGeraet() != null ? reservierung.getReserviertesGeraet().getInventarNr() : null);
+        if (wirksameInventarNr == null) {
+            throw new IllegalArgumentException("Für diese Reservierung wurde kein Gerät hinterlegt");
+        }
+
+        Geraet geraet = em.find(Geraet.class, wirksameInventarNr);
         if (geraet == null) {
             throw new IllegalArgumentException("Gerät nicht gefunden");
         }
@@ -96,7 +105,7 @@ public class DBaccess_Ausleiheverwaltung {
                         "SELECT COUNT(a) FROM Ausleihe a WHERE a.geraet.inventarNr = :inventarNr " +
                                 "AND a.ausleihdatum <= :bis " +
                                 "AND COALESCE(a.tatsaechlichesRueckgabedatum, a.vereinbartesRueckgabedatum) >= :von", Long.class)
-                .setParameter("inventarNr", inventarNr)
+                .setParameter("inventarNr", wirksameInventarNr)
                 .setParameter("von", ausleihdatum)
                 .setParameter("bis", rueckgabedatum)
                 .getSingleResult();
@@ -135,6 +144,31 @@ public class DBaccess_Ausleiheverwaltung {
                         Integer.class)
                 .setParameter("tag", referenzTag)
                 .getResultList();
+    }
+
+    @Transactional(readOnly = true)
+    public Map<Integer, String> findeAktiveAusleiherJeInventar(LocalDate tag) {
+        LocalDate referenzTag = tag != null ? tag : LocalDate.now();
+        List<Ausleihe> aktiveAusleihen = em.createQuery(
+                        "SELECT a FROM Ausleihe a " +
+                                "JOIN FETCH a.geraet g " +
+                                "JOIN FETCH a.mitarbeiter m " +
+                                "WHERE a.ausleihdatum <= :tag " +
+                                "AND COALESCE(a.tatsaechlichesRueckgabedatum, a.vereinbartesRueckgabedatum) >= :tag " +
+                                "ORDER BY a.ausleihdatum DESC, a.ausleiheNr DESC",
+                        Ausleihe.class)
+                .setParameter("tag", referenzTag)
+                .getResultList();
+
+        Map<Integer, String> ausleiherNachInventar = new LinkedHashMap<>();
+        for (Ausleihe ausleihe : aktiveAusleihen) {
+            Integer inventarNr = ausleihe.getGeraet().getInventarNr();
+            ausleiherNachInventar.putIfAbsent(
+                    inventarNr,
+                    ausleihe.getMitarbeiter().getVorname() + " " + ausleihe.getMitarbeiter().getNachname()
+            );
+        }
+        return ausleiherNachInventar;
     }
 
     private Geraet ermittleFreiesGeraet(Long geraetetypId, LocalDate von, LocalDate bis) {
