@@ -121,12 +121,16 @@ public class GeraeteverwaltimgReservierungsantraege {
                 "reservationId", reservierung.getReservierungsNr(),
                 "deviceTypeId", reservierung.getGeraetetyp().getId(),
                 "deviceTypeName", reservierung.getGeraetetyp().getHersteller() + " " + reservierung.getGeraetetyp().getBezeichnung(),
+                "preselectedDeviceInventarNr", reservierung.getReserviertesGeraet() != null ? reservierung.getReserviertesGeraet().getInventarNr() : null,
                 "availableCount", verfuegbareGeraete.size(),
                 "devices", verfuegbareGeraete.stream()
                         .map(geraet -> Map.of(
                                 "inventarNr", geraet.getInventarNr(),
                                 "serienNr", geraet.getSerienNr(),
                                 "label", "Inventar #" + geraet.getInventarNr() + " • Serie " + geraet.getSerienNr()
+                                        + (reservierung.getReserviertesGeraet() != null
+                                        && geraet.getInventarNr().equals(reservierung.getReserviertesGeraet().getInventarNr())
+                                        ? " • vorreserviert" : "")
                         ))
                         .toList()
         ));

@@ -33,7 +33,12 @@ public class DBaccess_Reservierungsverwaltung {
             throw new IllegalStateException("Kein Gerät dieses Typs verfügbar");
         }
 
-        Reservierung reservierung = new Reservierung(ausleihdatum, rueckgabedatum, geraetetyp, mitarbeiter);
+        Geraet reserviertesGeraet = ermittleReservierbaresGeraet(geraetetypId, ausleihdatum, rueckgabedatum, null);
+        if (reserviertesGeraet == null) {
+            throw new IllegalStateException("Kein konkret reservierbares Gerät verfügbar");
+        }
+
+        Reservierung reservierung = new Reservierung(ausleihdatum, rueckgabedatum, geraetetyp, mitarbeiter, reserviertesGeraet);
         em.persist(reservierung);
         return reservierung;
     }
@@ -56,6 +61,19 @@ public class DBaccess_Reservierungsverwaltung {
         }
 
         reservierung.aendere(ausleihdatum, rueckgabedatum);
+
+        if (!istGeraetImZeitraumFrei(reservierung.getReserviertesGeraet().getInventarNr(), ausleihdatum, rueckgabedatum, reservierungsNr)) {
+            Geraet neuReserviertesGeraet = ermittleReservierbaresGeraet(
+                    reservierung.getGeraetetyp().getId(),
+                    ausleihdatum,
+                    rueckgabedatum,
+                    reservierungsNr
+            );
+            if (neuReserviertesGeraet == null) {
+                throw new IllegalStateException("Kein konkret reservierbares Gerät verfügbar");
+            }
+            reservierung.setReserviertesGeraet(neuReserviertesGeraet);
+        }
         return reservierung;
     }
 
@@ -71,6 +89,18 @@ public class DBaccess_Reservierungsverwaltung {
         }
 
         reservierung.aendere(ausleihdatum, rueckgabedatum);
+        if (!istGeraetImZeitraumFrei(reservierung.getReserviertesGeraet().getInventarNr(), ausleihdatum, rueckgabedatum, reservierungsNr)) {
+            Geraet neuReserviertesGeraet = ermittleReservierbaresGeraet(
+                    reservierung.getGeraetetyp().getId(),
+                    ausleihdatum,
+                    rueckgabedatum,
+                    reservierungsNr
+            );
+            if (neuReserviertesGeraet == null) {
+                throw new IllegalStateException("Kein konkret reservierbares Gerät verfügbar");
+            }
+            reservierung.setReserviertesGeraet(neuReserviertesGeraet);
+        }
         return reservierung;
     }
 
@@ -134,7 +164,7 @@ public class DBaccess_Reservierungsverwaltung {
     }
 
     public List<Geraet> findeVerfuegbareGeraeteFuerReservierung(Reservierung reservierung) {
-        return em.createQuery(
+        List<Geraet> geraete = em.createQuery(
                         "SELECT g FROM Geraet g " +
                                 "WHERE g.istAusleihbar = true " +
                                 "AND g.geraetetyp.id = :geraetetypId " +
@@ -150,6 +180,21 @@ public class DBaccess_Reservierungsverwaltung {
                 .setParameter("ausleihe", reservierung.getAusleihdatum())
                 .setParameter("rueckgabe", reservierung.getRueckgabedatum())
                 .getResultList();
+        Geraet reserviertesGeraet = reservierung.getReserviertesGeraet();
+        if (reserviertesGeraet == null) {
+            return geraete;
+        }
+
+        Integer reservierteInventarNr = reserviertesGeraet.getInventarNr();
+        geraete.sort((a, b) -> {
+            boolean aIstReserviert = a.getInventarNr().equals(reservierteInventarNr);
+            boolean bIstReserviert = b.getInventarNr().equals(reservierteInventarNr);
+            if (aIstReserviert == bIstReserviert) {
+                return Integer.compare(a.getInventarNr(), b.getInventarNr());
+            }
+            return aIstReserviert ? -1 : 1;
+        });
+        return geraete;
     }
 
     public List<Zeitraum> findeNichtVerfuegbareZeitraeume(Long geraetetypId,
@@ -203,6 +248,49 @@ public class DBaccess_Reservierungsverwaltung {
 
     private boolean istVerfuegbar(Long geraetetypId, LocalDate von, LocalDate bis) {
         return istVerfuegbarExklusive(geraetetypId, von, bis, null);
+    }
+
+    private Geraet ermittleReservierbaresGeraet(Long geraetetypId, LocalDate von, LocalDate bis, Integer exklusiveReservierungId) {
+        List<Geraet> kandidaten = em.createQuery(
+                        "SELECT g FROM Geraet g WHERE g.geraetetyp.id = :typId AND g.istAusleihbar = true ORDER BY g.inventarNr ASC",
+                        Geraet.class)
+                .setParameter("typId", geraetetypId)
+                .getResultList();
+
+        for (Geraet kandidat : kandidaten) {
+            if (istGeraetImZeitraumFrei(kandidat.getInventarNr(), von, bis, exklusiveReservierungId)) {
+                return kandidat;
+            }
+        }
+        return null;
+    }
+
+    private boolean istGeraetImZeitraumFrei(Integer inventarNr, LocalDate von, LocalDate bis, Integer exklusiveReservierungId) {
+        Long blockierendeAusleihen = em.createQuery(
+                        "SELECT COUNT(a) FROM Ausleihe a WHERE a.geraet.inventarNr = :inventarNr " +
+                                "AND a.ausleihdatum <= :bis " +
+                                "AND COALESCE(a.tatsaechlichesRueckgabedatum, a.vereinbartesRueckgabedatum) >= :von",
+                        Long.class)
+                .setParameter("inventarNr", inventarNr)
+                .setParameter("von", von)
+                .setParameter("bis", bis)
+                .getSingleResult();
+
+        String reservierungsJpql = "SELECT COUNT(r) FROM Reservierung r WHERE r.reserviertesGeraet.inventarNr = :inventarNr " +
+                "AND r.ausleihdatum <= :bis " +
+                "AND r.rueckgabedatum >= :von " +
+                "AND NOT EXISTS (SELECT a.ausleiheNr FROM Ausleihe a WHERE a.reservierung = r)" +
+                (exklusiveReservierungId != null ? " AND r.reservierungsNr <> :id" : "");
+        var query = em.createQuery(reservierungsJpql, Long.class)
+                .setParameter("inventarNr", inventarNr)
+                .setParameter("von", von)
+                .setParameter("bis", bis);
+        if (exklusiveReservierungId != null) {
+            query.setParameter("id", exklusiveReservierungId);
+        }
+        Long blockierendeReservierungen = query.getSingleResult();
+
+        return blockierendeAusleihen == 0 && blockierendeReservierungen == 0;
     }
 
     private boolean istVerfuegbarExklusive(Long geraetetypId, LocalDate von, LocalDate bis, Integer exklusiveReservierungId) {

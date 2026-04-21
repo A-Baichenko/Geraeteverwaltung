@@ -146,16 +146,13 @@ public class DBaccess_Geraeteverwaltung {
                                 "WHERE g.status = :freiStatus " +
                                 "AND EXISTS (" +
                                 "SELECT r.reservierungsNr FROM Reservierung r " +
-                                "WHERE r.geraetetyp = g.geraetetyp " +
-                                "AND r.ausleihdatum <= :tag " +
-                                "AND r.rueckgabedatum >= :tag " +
+                                "WHERE r.reserviertesGeraet = g " +
                                 "AND NOT EXISTS (" +
                                 "SELECT a.ausleiheNr FROM Ausleihe a WHERE a.reservierung = r" +
                                 ")" +
                                 ")")
                 .setParameter("status", GeraetStatus.RESERVIERT)
                 .setParameter("freiStatus", GeraetStatus.VERFUEGBAR)
-                .setParameter("tag", referenz)
                 .executeUpdate();
     }
 
