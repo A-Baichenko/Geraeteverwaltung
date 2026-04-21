@@ -18,7 +18,7 @@ const managerState = {
     activeRequest: null,
     activeFormDraft: null,
     isEditing: false,
-    openSection: 'reservationRequests',
+    openSection: new Set(['reservationRequests']),
     deviceSelection: {
         isOpen: false,
         items: [],
@@ -43,7 +43,7 @@ const managerState = {
     }
 };
 
-const managerAccordionSections = new Set(['reservationRequests', 'assignFixed', 'lendOverview']);
+const managerAccordionSections = new Set(['reservationRequests', 'assignFixed', 'lendOverview', 'deviceManagement']);
 
 function authHeaders(token) {
     return { Authorization: `Bearer ${token}` };
@@ -252,7 +252,7 @@ function renderManagerView(root) {
     }
 
     root.querySelectorAll('.gv-accordion-section').forEach((section) => {
-        section.classList.toggle('is-open', section.dataset.section === managerState.openSection);
+        section.classList.toggle('is-open', managerState.openSections.has(section.dataset.section));
     });
 
     const globalError = root.querySelector('#gv-global-error');
@@ -533,11 +533,15 @@ export function registerGeraeteverwaltungHandlers({ pageContent, getToken, redir
         try {
             if (action === 'toggle-section' && managerAccordionSections.has(target.dataset.sectionKey)) {
                 const sectionKey = target.dataset.sectionKey;
-                managerState.openSection = managerState.openSection === sectionKey ? '' : sectionKey;
+                if (managerState.openSections.has(sectionKey)) {
+                    managerState.openSections.delete(sectionKey);
+                } else {
+                    managerState.openSections.add(sectionKey);
+                }
             }
 
             if (action === 'open-request') {
-                managerState.openSection = 'reservationRequests';
+                managerState.openSections.add('reservationRequests');
                 managerState.deviceSelection.error = null;
                 managerState.deviceSelection.selectedDevice = null;
                 managerState.isEditing = false;
