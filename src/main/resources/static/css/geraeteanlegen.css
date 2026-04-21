@@ -45,7 +45,8 @@
 }
 
 .ga-accordion-section.is-open .ga-accordion-content {
-    max-height: 1200px;
+    max-height: none;
+    overflow: visible;
     padding: 0.9rem;
 }
 

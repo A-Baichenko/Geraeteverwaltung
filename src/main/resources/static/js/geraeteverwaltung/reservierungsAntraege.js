@@ -43,6 +43,8 @@ const managerState = {
     }
 };
 
+const managerAccordionSections = new Set(['reservationRequests', 'assignFixed', 'lendOverview']);
+
 function authHeaders(token) {
     return { Authorization: `Bearer ${token}` };
 }
@@ -529,7 +531,7 @@ export function registerGeraeteverwaltungHandlers({ pageContent, getToken, redir
         const action = target.dataset.action;
 
         try {
-            if (action === 'toggle-section') {
+            if (action === 'toggle-section' && managerAccordionSections.has(target.dataset.sectionKey)) {
                 const sectionKey = target.dataset.sectionKey;
                 managerState.openSection = managerState.openSection === sectionKey ? '' : sectionKey;
             }

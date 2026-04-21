@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import studienprojekt.geraeteverwaltung.geraeteverwaltung.DBaccess.entity.Ausleihe;
 import studienprojekt.geraeteverwaltung.geraeteverwaltung.DBaccess.entity.Geraet;
+import studienprojekt.geraeteverwaltung.geraeteverwaltung.DBaccess.entity.GeraetStatus;
 import studienprojekt.geraeteverwaltung.geraeteverwaltung.DBaccess.entity.Reservierung;
 import studienprojekt.geraeteverwaltung.mitarbeiterverwalten.DBaccess.entity.Mitarbeiter;
 
@@ -38,6 +39,7 @@ public class DBaccess_Ausleiheverwaltung {
 
         Ausleihe ausleihe = new Ausleihe(ausleihdatum, vereinbartesRueckgabedatum, geraet, mitarbeiter, null);
         em.persist(ausleihe);
+        markiereAlsAusgeliehen(geraet);
         return ausleihe;
     }
 
@@ -59,6 +61,7 @@ public class DBaccess_Ausleiheverwaltung {
 
         Ausleihe ausleihe = reservierung.erstelleAusleihe(geraet, tatsaechlichesAusleihdatum, reservierung.getRueckgabedatum());
         em.persist(ausleihe);
+        markiereAlsAusgeliehen(geraet);
         return ausleihe;
     }
 
@@ -117,6 +120,7 @@ public class DBaccess_Ausleiheverwaltung {
         LocalDate wirksamesAusleihdatum = tatsaechlichesAusleihdatum != null ? tatsaechlichesAusleihdatum : ausleihdatum;
         Ausleihe ausleihe = reservierung.erstelleAusleihe(geraet, wirksamesAusleihdatum, rueckgabedatum);
         em.persist(ausleihe);
+        markiereAlsAusgeliehen(geraet);
         return ausleihe;
     }
 
@@ -127,6 +131,7 @@ public class DBaccess_Ausleiheverwaltung {
         }
 
         ausleihe.gibZurueck(rueckgabeDatum);
+        aktualisiereStatusNachRueckgabe(ausleihe.getGeraet());
         return ausleihe;
     }
 
@@ -193,6 +198,30 @@ public class DBaccess_Ausleiheverwaltung {
         }
 
         return null;
+    }
+
+    private void markiereAlsAusgeliehen(Geraet geraet) {
+        if (geraet != null) {
+            geraet.setStatus(GeraetStatus.AUSGELIEHEN);
+        }
+    }
+
+    private void aktualisiereStatusNachRueckgabe(Geraet geraet) {
+        if (geraet == null) {
+            return;
+        }
+
+        if (!geraet.isIstAusleihbar()) {
+            geraet.setStatus(GeraetStatus.WARTUNG_DEFEKT);
+            return;
+        }
+
+        if (geraet.getStaendigerNutzer() != null) {
+            geraet.setStatus(GeraetStatus.FEST_ZUGEORDNET);
+            return;
+        }
+
+        geraet.setStatus(GeraetStatus.VERFUEGBAR);
     }
 
 

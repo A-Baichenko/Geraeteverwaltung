@@ -38,7 +38,8 @@
 }
 
 .al-accordion-section.is-open .al-accordion-content {
-    max-height: 1200px;
+    max-height: none;
+    overflow: visible;
     padding: 0.9rem;
 }
 
