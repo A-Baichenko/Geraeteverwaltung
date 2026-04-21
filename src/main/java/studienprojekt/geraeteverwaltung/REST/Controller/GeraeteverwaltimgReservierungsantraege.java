@@ -150,7 +150,7 @@ public class GeraeteverwaltimgReservierungsantraege {
             Ausleihe ausleihe = dbaccessAusleiheverwaltung.nehmeReservierungAn(
                     reservierungsNr,
                     acceptRequest.inventarNr(),
-                    null
+                    LocalDate.now()
             );
 
             return ResponseEntity.ok(Map.of(
