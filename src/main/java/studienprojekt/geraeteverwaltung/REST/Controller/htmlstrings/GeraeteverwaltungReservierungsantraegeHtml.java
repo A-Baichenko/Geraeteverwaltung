@@ -257,12 +257,30 @@ public final class GeraeteverwaltungReservierungsantraegeHtml {
                                   </div>
                               </section>
 
-                    <section class="gv-accordion-section" data-section="lendOverview">
-                        <button type="button" class="gv-accordion-trigger" data-action="toggle-section" data-section-key="lendOverview">
-                            <span>Ausleihe Übersicht</span><span class="gv-chevron">▾</span>
-                        </button>
-                        <div class="gv-accordion-content"><p class="placeholder">Bereich vorhanden, Funktion folgt später.</p></div>
-                    </section>
+                    <section class="ao-accordion-section" data-section="lendOverview">
+                                            <button type="button" class="ao-accordion-trigger" data-action="toggle-section" data-section-key="lendOverview">
+                                                <span>Ausleihe Übersicht</span><span class="ao-chevron">▾</span>
+                                            </button>
+                                            <div class="ao-accordion-content">
+                                                <p id="ao-global-message" class="ao-error-text"></p>
+                
+                                                <div class="ao-grid">
+                                                    <section>
+                                                        <div class="ao-search-box">
+                                                            <input id="ao-search-input"
+                                                                   name="lendOverviewSearch"
+                                                                   type="text"
+                                                                   placeholder="Mitarbeiter suchen">
+                                                            <button type="button" data-action="clear-overview-search">✕</button>
+                                                        </div>
+                
+                                                        <ul id="ao-overview-list" class="ao-list"></ul>
+                                                        <p id="ao-overview-placeholder" class="ao-placeholder">Noch keine Ausleihen vorhanden.</p>
+                                                        <div id="ao-pagination" class="ao-pagination"></div>
+                                                    </section>
+                                                </div>
+                                            </div>
+                                        </section>
 
                     <section class="gv-accordion-section" data-section="deviceManagement">
                         <button type="button" class="gv-accordion-trigger" data-action="toggle-section" data-section-key="deviceManagement">
