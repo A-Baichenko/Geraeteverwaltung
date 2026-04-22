@@ -158,12 +158,68 @@ public final class GeraeteverwaltungReservierungsantraegeHtml {
                         </div>
                     </section>
 
-                    <section class="gv-accordion-section" data-section="assignFixed">
-                        <button type="button" class="gv-accordion-trigger" data-action="toggle-section" data-section-key="assignFixed">
-                            <span>Fest zuordnen</span><span class="gv-chevron">▾</span>
-                        </button>
-                        <div class="gv-accordion-content"><p class="placeholder">Bereich vorhanden, Funktion folgt später.</p></div>
-                    </section>
+                    <section class="fz-accordion-section" data-section="assignFixed">
+                                  <button type="button" class="fz-accordion-trigger" data-action="toggle-section" data-section-key="assignFixed">
+                                      <span>Fest zuordnen</span><span class="fz-chevron">▾</span>
+                                  </button>
+                                  <div class="fz-accordion-content">
+                                      <p id="fz-global-message" class="fz-error-text"></p>
+                
+                                      <div class="fz-grid">
+                                          <section>
+                                              <div class="fz-toolbar">
+                                                  <div class="fz-search-box">
+                                                      <input id="fz-search-input"
+                                                             name="fixedAssignmentSearch"
+                                                             type="text"
+                                                             placeholder="Suche">
+                                                  </div>
+                                                  <button type="button" class="fz-add-button" data-action="open-fixed-editor">＋</button>
+                                              </div>
+                
+                                              <h3>Liste fest zugeordneter Geräte</h3>
+                                              <ul id="fz-assignment-list" class="fz-list"></ul>
+                                              <p id="fz-list-placeholder" class="fz-placeholder">Noch keine festen Zuordnungen vorhanden.</p>
+                                          </section>
+                
+                                          <section id="fz-editor-panel" class="fz-slide-panel">
+                                              <h3>Zuordnung</h3>
+                
+                                              <div class="fz-fields">
+                                                  <label class="fz-field">
+                                                      <span>Inv Nr:</span>
+                                                      <input id="fz-inventar-nr"
+                                                             name="inventarNr"
+                                                             type="number"
+                                                             placeholder="z. B. 1001">
+                                                  </label>
+                
+                                                  <label class="fz-field">
+                                                      <span>Mitarbeiter:</span>
+                                                      <input id="fz-mitarbeiter-nr"
+                                                             name="mitarbeiterNr"
+                                                             type="number"
+                                                             placeholder="Personal-Nr.">
+                                                  </label>
+                
+                                                  <label class="fz-field">
+                                                      <span>Raum:</span>
+                                                      <input id="fz-raum-nr"
+                                                             name="raumNr"
+                                                             type="number"
+                                                             placeholder="Raum-Nr.">
+                                                  </label>
+                                              </div>
+                
+                                              <div class="fz-actions">
+                                                  <button type="button" data-action="save-fixed-assignment">OK</button>
+                                                  <button type="button" class="fz-secondary-button" data-action="clear-fixed-assignment">Zuordnung aufheben</button>
+                                                  <button type="button" class="fz-secondary-button" data-action="close-fixed-editor">Abbrechen</button>
+                                              </div>
+                                          </section>
+                                      </div>
+                                  </div>
+                              </section>
 
                     <section class="al-accordion-section" data-section="lend">
                                   <button type="button" class="al-accordion-trigger" data-action="toggle-section" data-section-key="lend">
