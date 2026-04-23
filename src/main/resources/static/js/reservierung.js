@@ -23,6 +23,20 @@ const state = {
 let ausleihdatumPicker = null;
 let rueckgabedatumPicker = null;
 
+
+function formatDateForApi(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
+function getHeute() {
+    const heute = new Date();
+    heute.setHours(0, 0, 0, 0);
+    return heute;
+}
+
 function authHeaders(token) {
     return {
         Authorization: `Bearer ${token}`
@@ -68,10 +82,10 @@ async function ladeNichtVerfuegbareZeitraeume(token) {
     }
 
     const heute = new Date();
-    const start = heute.toISOString().slice(0, 10);
+    const start = formatDateForApi(heute);
     const endeDatum = new Date(heute);
     endeDatum.setMonth(endeDatum.getMonth() + 12);
-    const end = endeDatum.toISOString().slice(0, 10);
+    const end = formatDateForApi(endeDatum);
 
     const url = new URL(`/api/reservierung/device-types/${state.form.geraetetypId}/unavailable-periods`, window.location.origin);
     url.searchParams.set('start', start);
@@ -290,7 +304,8 @@ function initialisiereDatepicker() {
     const commonConfig = {
         dateFormat: 'Y-m-d',
         locale: 'de',
-        disableMobile: true
+        disableMobile: true,
+        minDate: 'today'
     };
 
     ausleihdatumPicker?.destroy();
@@ -332,6 +347,9 @@ function aktualisiereDatepickerSperren() {
         from: periode.start,
         to: periode.end
     }));
+    const heute = getHeute();
+
+    disableConfig.unshift((date) => date < heute);
 
     ausleihdatumPicker.set('disable', disableConfig);
     rueckgabedatumPicker.set('disable', disableConfig);

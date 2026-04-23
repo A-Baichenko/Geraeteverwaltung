@@ -313,7 +313,8 @@ public class DBaccess_Reservierungsverwaltung {
                 .getSingleResult();
 
         String reservierungenJpql = "SELECT COUNT(r) FROM Reservierung r WHERE r.geraetetyp.id = :typId " +
-                "AND r.ausleihdatum <= :bis AND r.rueckgabedatum >= :von" +
+                "AND r.ausleihdatum <= :bis AND r.rueckgabedatum >= :von " +
+                "AND NOT EXISTS (SELECT a.ausleiheNr FROM Ausleihe a WHERE a.reservierung = r)" +
                 (exklusiveReservierungId != null ? " AND r.reservierungsNr <> :id" : "");
         var reservierungenQuery = em.createQuery(reservierungenJpql, Long.class)
                 .setParameter("typId", geraetetypId)
@@ -338,7 +339,8 @@ public class DBaccess_Reservierungsverwaltung {
 
     private Long zaehleAktiveReservierungen(Long geraetetypId, LocalDate tag, Integer exklusiveReservierungId) {
         String reservierungenJpql = "SELECT COUNT(r) FROM Reservierung r WHERE r.geraetetyp.id = :typId " +
-                "AND r.ausleihdatum <= :tag AND r.rueckgabedatum >= :tag" +
+                "AND r.ausleihdatum <= :tag AND r.rueckgabedatum >= :tag " +
+                "AND NOT EXISTS (SELECT a.ausleiheNr FROM Ausleihe a WHERE a.reservierung = r)" +
                 (exklusiveReservierungId != null ? " AND r.reservierungsNr <> :id" : "");
 
         var query = em.createQuery(reservierungenJpql, Long.class)
