@@ -369,6 +369,8 @@ export function registerReservierungAusleiheHandlers({
                                                          redirectToLogin,
                                                          getState
                                                      }) {
+    let reservierungTabInitialized = false;
+    let warReservierungTabAktiv = false;
     pageContent.addEventListener('click', async (event) => {
         const target = event.target.closest(
             '#btn-reservierung-speichern, #btn-reservierung-abbrechen, [data-geraetetyp-id], [data-edit-id], [data-delete-id]'
@@ -442,19 +444,27 @@ export function registerReservierungAusleiheHandlers({
     const observer = new MutationObserver(async () => {
         const tabIstAktiv = getState().activeTabKey === 'reservierung';
         const reservierungsListe = document.getElementById('meine-reservierungen-liste');
-        if (!tabIstAktiv || !reservierungsListe || reservierungsListe.dataset.initialized === 'true') {
+        if (!tabIstAktiv || !reservierungsListe) {
+            warReservierungTabAktiv = false;
             return;
         }
 
-        reservierungsListe.dataset.initialized = 'true';
+        if (warReservierungTabAktiv) {
+            return;
+        }
+        warReservierungTabAktiv = true;
+
         const token = getToken();
         if (!token) {
             redirectToLogin();
             return;
         }
 
-        await initialisiereTab(token);
-        initialisiereDatepicker();
+        await initialisiereTab(token, !reservierungTabInitialized);
+        if (!reservierungTabInitialized) {
+            initialisiereDatepicker();
+            reservierungTabInitialized = true;
+        }
     });
 
     observer.observe(pageContent, { childList: true, subtree: true });

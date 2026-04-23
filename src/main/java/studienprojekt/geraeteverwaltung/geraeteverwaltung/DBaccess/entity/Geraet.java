@@ -58,23 +58,19 @@ public class Geraet {
         this.serienNr = serienNr;
         this.kaufdatum = kaufdatum;
         this.istAusleihbar = istAusleihbar;
-        if (!istAusleihbar) {
-            this.status = GeraetStatus.WARTUNG_DEFEKT;
-        } else if (this.staendigerNutzer != null) {
-            this.status = GeraetStatus.FEST_ZUGEORDNET;
-        } else {
-            this.status = GeraetStatus.VERFUEGBAR;
-        }
+        aktualisiereStatusNachZuweisung();
     }
 
     // Zuweisungen (wichtig für Use-Cases)
 
     public void setStaendigerNutzer(Mitarbeiter nutzer) {
         this.staendigerNutzer = nutzer;
+        aktualisiereStatusNachZuweisung();
     }
 
     public void setStandort(Raum standort) {
         this.standort = standort;
+        aktualisiereStatusNachZuweisung();
     }
 
     public void setGeraetetyp(Geraetetyp geraetetyp) {
@@ -119,5 +115,15 @@ public class Geraet {
 
     public void setStatus(GeraetStatus status) {
         this.status = status;
+    }
+
+    public void aktualisiereStatusNachZuweisung() {
+        boolean hatFesteZuordnung = this.staendigerNutzer != null || this.standort != null;
+        if (hatFesteZuordnung) {
+            this.status = GeraetStatus.FEST_ZUGEORDNET;
+            return;
+        }
+
+        this.status = this.istAusleihbar ? GeraetStatus.VERFUEGBAR : GeraetStatus.WARTUNG_DEFEKT;
     }
 }

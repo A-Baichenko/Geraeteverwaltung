@@ -95,4 +95,35 @@ class DBaccessReservierungsAusleiheTests {
                 LocalDate.of(2026, 5, 7)
         ));
     }
+
+    @Test
+    void ausleiheInDerZukunftWirdAbgelehnt() {
+        Kategorie k = geraeteDb.legeKategorieAn(new Kategorie("Notebook"));
+        Geraetetyp t = geraeteDb.legeGeraetetypAn(new Geraetetyp("Lenovo", "T14", k));
+        geraeteDb.legeGeraetAn(new Geraet(300, 7890, LocalDate.now(), true, t));
+        Mitarbeiter m = mitarbeiterDb.legeMitarbeiterAn(new Mitarbeiter(17, "Lena", "Test", Anrede.FRAU));
+
+        assertThrows(IllegalArgumentException.class, () -> ausleiheDb.leiheGeraetAus(
+                t.getId(),
+                m.getPersonalNr(),
+                LocalDate.now().plusDays(1),
+                LocalDate.now().plusDays(2)
+        ));
+    }
+
+    @Test
+    void festZugeordnetesGeraetIstNichtReservierbar() {
+        Kategorie k = geraeteDb.legeKategorieAn(new Kategorie("Beamer"));
+        Geraetetyp t = geraeteDb.legeGeraetetypAn(new Geraetetyp("Epson", "EB-X", k));
+        Geraet g = geraeteDb.legeGeraetAn(new Geraet(400, 9999, LocalDate.now(), true, t));
+        Mitarbeiter m = mitarbeiterDb.legeMitarbeiterAn(new Mitarbeiter(51, "Tom", "Tester", Anrede.HERR));
+        g.setStaendigerNutzer(m);
+
+        assertThrows(IllegalStateException.class, () -> reservierungsDb.reserviereGeraet(
+                t.getId(),
+                m.getPersonalNr(),
+                LocalDate.now().plusDays(1),
+                LocalDate.now().plusDays(2)
+        ));
+    }
 }

@@ -67,6 +67,7 @@ public class AusleiheUebersichtController {
     @GetMapping
     public ResponseEntity<?> getOverview(
             @RequestParam(required = false) String query,
+            @RequestParam(required = false) Boolean returned,
             HttpServletRequest request) {
 
         if (authenticatedManagerOrAdmin(request) == null) {
@@ -88,14 +89,18 @@ public class AusleiheUebersichtController {
         List<Map<String, Object>> response = ausleihen.stream()
                 .filter(a -> {
                     if (filter.isBlank()) {
-                        return true;
+                        return returned == null || (a.getTatsaechlichesRueckgabedatum() != null) == returned;
                     }
 
                     String mitarbeiterName = (
                             a.getMitarbeiter().getVorname() + " " + a.getMitarbeiter().getNachname()
                     ).toLowerCase();
 
-                    return mitarbeiterName.contains(filter);
+                    boolean queryMatch = mitarbeiterName.contains(filter);
+                    if (!queryMatch) {
+                        return false;
+                    }
+                    return returned == null || (a.getTatsaechlichesRueckgabedatum() != null) == returned;
                 })
                 .map(a -> {
                     Map<String, Object> map = new LinkedHashMap<>();

@@ -327,6 +327,12 @@ public final class GeraeteverwaltungReservierungsantraegeHtml {
                                                                    name="lendOverviewSearch"
                                                                    type="text"
                                                                    placeholder="Mitarbeiter suchen">
+                                                                   
+                                                                   <select id="ao-return-filter" name="lendOverviewReturnFilter">
+                                                                        <option value="all">Alle</option>
+                                                                        <option value="open">Noch nicht zurückgegeben</option>
+                                                                        <option value="done">Schon zurückgegeben</option>
+                                                                   </select>
                                                             <button type="button" data-action="clear-overview-search">✕</button>
                                                         </div>
                 
