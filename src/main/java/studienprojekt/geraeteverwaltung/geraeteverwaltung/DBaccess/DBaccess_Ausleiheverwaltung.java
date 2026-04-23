@@ -138,6 +138,7 @@ public class DBaccess_Ausleiheverwaltung {
         }
 
         ausleihe.gibZurueck(rueckgabeDatum);
+        entferneAbgeschlosseneReservierung(ausleihe, rueckgabeDatum);
         aktualisiereStatusNachRueckgabe(ausleihe.getGeraet());
         return ausleihe;
     }
@@ -234,6 +235,21 @@ public class DBaccess_Ausleiheverwaltung {
 
         geraet.setStatus(GeraetStatus.VERFUEGBAR);
     }
+
+    private void entferneAbgeschlosseneReservierung(Ausleihe ausleihe, LocalDate rueckgabeDatum) {
+        Reservierung reservierung = ausleihe.getReservierung();
+        if (reservierung == null || rueckgabeDatum == null) {
+            return;
+        }
+
+        if (rueckgabeDatum.isBefore(reservierung.getRueckgabedatum())) {
+            return;
+        }
+
+        ausleihe.loeseReservierungsbezug();
+        em.remove(reservierung);
+    }
+    
     private void validiereAusleihzeitraum(LocalDate ausleihdatum, LocalDate rueckgabedatum) {
         if (ausleihdatum == null || rueckgabedatum == null) {
             throw new IllegalArgumentException("Ausleihdatum und Rückgabedatum sind erforderlich");

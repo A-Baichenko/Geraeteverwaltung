@@ -83,4 +83,9 @@ public class Ausleihe {
     public Reservierung getReservierung() {
         return reservierung;
     }
+
+    public void loeseReservierungsbezug() {
+        this.reservierung = null;
+    }
 }
+
