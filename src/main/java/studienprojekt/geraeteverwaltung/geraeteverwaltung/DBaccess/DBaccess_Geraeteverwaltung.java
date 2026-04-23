@@ -118,15 +118,22 @@ public class DBaccess_Geraeteverwaltung {
     public void synchronisiereStatus(LocalDate datum) {
         LocalDate referenz = datum != null ? datum : LocalDate.now();
 
-        em.createQuery("UPDATE Geraet g SET g.status = :status WHERE g.istAusleihbar = false")
+        em.createQuery("UPDATE Geraet g SET g.status = :status " +
+                        "WHERE g.istAusleihbar = false " +
+                        "AND g.staendigerNutzer IS NULL " +
+                        "AND g.standort IS NULL")
                 .setParameter("status", GeraetStatus.WARTUNG_DEFEKT)
                 .executeUpdate();
 
-        em.createQuery("UPDATE Geraet g SET g.status = :status WHERE g.istAusleihbar = true AND g.staendigerNutzer IS NOT NULL")
+        em.createQuery("UPDATE Geraet g SET g.status = :status " +
+                        "WHERE g.staendigerNutzer IS NOT NULL OR g.standort IS NOT NULL")
                 .setParameter("status", GeraetStatus.FEST_ZUGEORDNET)
                 .executeUpdate();
 
-        em.createQuery("UPDATE Geraet g SET g.status = :status WHERE g.istAusleihbar = true AND g.staendigerNutzer IS NULL")
+        em.createQuery("UPDATE Geraet g SET g.status = :status " +
+                        "WHERE g.istAusleihbar = true " +
+                        "AND g.staendigerNutzer IS NULL " +
+                        "AND g.standort IS NULL")
                 .setParameter("status", GeraetStatus.VERFUEGBAR)
                 .executeUpdate();
 

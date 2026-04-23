@@ -27,6 +27,7 @@ public class DBaccess_Ausleiheverwaltung {
                                    Integer personalNr,
                                    LocalDate ausleihdatum,
                                    LocalDate vereinbartesRueckgabedatum) {
+        validiereAusleihzeitraum(ausleihdatum, vereinbartesRueckgabedatum);
         Mitarbeiter mitarbeiter = em.find(Mitarbeiter.class, personalNr);
         if (mitarbeiter == null) {
             throw new IllegalArgumentException("Mitarbeiter nicht gefunden");
@@ -44,6 +45,9 @@ public class DBaccess_Ausleiheverwaltung {
     }
 
     public Ausleihe leiheReserviertesGeraetAus(Integer reservierungsNr, LocalDate tatsaechlichesAusleihdatum) {
+        if (tatsaechlichesAusleihdatum != null && tatsaechlichesAusleihdatum.isAfter(LocalDate.now())) {
+            throw new IllegalArgumentException("Ausleihedatum darf nicht in der Zukunft liegen");
+        }
         Reservierung reservierung = em.find(Reservierung.class, reservierungsNr);
         if (reservierung == null) {
             throw new IllegalArgumentException("Reservierung nicht gefunden");
@@ -103,6 +107,9 @@ public class DBaccess_Ausleiheverwaltung {
 
         LocalDate ausleihdatum = reservierung.getAusleihdatum();
         LocalDate rueckgabedatum = reservierung.getRueckgabedatum();
+        if (LocalDate.now().isBefore(ausleihdatum)) {
+            throw new IllegalStateException("Reservierung kann erst am Ausleihtag ausgeliehen werden");
+        }
 
         Long blockierendeAusleihen = em.createQuery(
                         "SELECT COUNT(a) FROM Ausleihe a WHERE a.geraet.inventarNr = :inventarNr " +
@@ -178,7 +185,11 @@ public class DBaccess_Ausleiheverwaltung {
 
     private Geraet ermittleFreiesGeraet(Long geraetetypId, LocalDate von, LocalDate bis) {
         List<Geraet> kandidaten = em.createQuery(
-                        "SELECT g FROM Geraet g WHERE g.geraetetyp.id = :typId AND g.istAusleihbar = true", Geraet.class)
+                        "SELECT g FROM Geraet g WHERE g.geraetetyp.id = :typId " +
+                                "AND g.istAusleihbar = true " +
+                                "AND g.staendigerNutzer IS NULL " +
+                                "AND g.standort IS NULL",
+                        Geraet.class)
                 .setParameter("typId", geraetetypId)
                 .getResultList();
 
@@ -222,6 +233,17 @@ public class DBaccess_Ausleiheverwaltung {
         }
 
         geraet.setStatus(GeraetStatus.VERFUEGBAR);
+    }
+    private void validiereAusleihzeitraum(LocalDate ausleihdatum, LocalDate rueckgabedatum) {
+        if (ausleihdatum == null || rueckgabedatum == null) {
+            throw new IllegalArgumentException("Ausleihdatum und Rückgabedatum sind erforderlich");
+        }
+        if (ausleihdatum.isAfter(rueckgabedatum)) {
+            throw new IllegalArgumentException("Ausleihdatum darf nicht nach dem Rückgabedatum liegen");
+        }
+        if (ausleihdatum.isAfter(LocalDate.now())) {
+            throw new IllegalArgumentException("Ausleihe in der Zukunft ist nicht erlaubt. Bitte zuerst reservieren.");
+        }
     }
 
 

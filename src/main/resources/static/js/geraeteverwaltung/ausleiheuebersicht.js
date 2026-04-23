@@ -2,6 +2,7 @@ const overviewState = {
     openSection: '',
     items: [],
     searchTerm: '',
+    returnFilter: 'all',
     currentPage: 1,
     pageSize: 5,
     loading: {
@@ -31,9 +32,18 @@ async function fetchOverviewViewConfig(token) {
     return response.json();
 }
 
-async function fetchLendOverviewItems(token, query = '') {
-    const endpoint = query.trim()
-        ? `/api/geraeteverwaltung/lend-overview?query=${encodeURIComponent(query)}`
+async function fetchLendOverviewItems(token, query = '', returnFilter = 'all') {
+    const params = new URLSearchParams();
+    if (query.trim()) {
+        params.set('query', query.trim());
+    }
+    if (returnFilter === 'open') {
+        params.set('returned', 'false');
+    } else if (returnFilter === 'done') {
+        params.set('returned', 'true');
+    }
+    const endpoint = params.toString()
+        ? `/api/geraeteverwaltung/lend-overview?${params.toString()}`
         : '/api/geraeteverwaltung/lend-overview';
 
     const response = await fetch(endpoint, {
@@ -125,10 +135,14 @@ function renderOverviewView(root) {
     const list = root.querySelector('#ao-overview-list');
     const placeholder = root.querySelector('#ao-overview-placeholder');
     const searchInput = root.querySelector('#ao-search-input');
+    const returnFilter = root.querySelector('#ao-return-filter');
     const pagination = root.querySelector('#ao-pagination');
 
     if (searchInput) {
         searchInput.value = overviewState.searchTerm;
+    }
+    if (returnFilter) {
+        returnFilter.value = overviewState.returnFilter;
     }
 
     normalizeCurrentPage();
@@ -201,7 +215,7 @@ async function loadOverviewItems(token, root) {
     renderOverviewView(root);
 
     try {
-        overviewState.items = await fetchLendOverviewItems(token, overviewState.searchTerm);
+        overviewState.items = await fetchLendOverviewItems(token, overviewState.searchTerm, overviewState.returnFilter);
     } catch (error) {
         overviewState.items = [];
         overviewState.message = error.message;
@@ -300,6 +314,7 @@ export function registerAusleiheUebersichtHandlers({ pageContent, getToken, redi
 
             if (action === 'clear-overview-search') {
                 overviewState.searchTerm = '';
+                overviewState.returnFilter = 'all';
                 overviewState.currentPage = 1;
                 await loadOverviewItems(token, root);
                 return;
@@ -366,6 +381,28 @@ export function registerAusleiheUebersichtHandlers({ pageContent, getToken, redi
         overviewState.searchTerm = target.value || '';
         overviewState.currentPage = 1;
 
+        if (overviewState.openSection === 'lendOverview') {
+            await loadOverviewItems(token, root);
+        }
+    });
+    pageContent.addEventListener('change', async (event) => {
+        const target = event.target;
+        if (!target || target.id !== 'ao-return-filter') {
+            return;
+        }
+
+        const token = getToken();
+        if (!token) {
+            return;
+        }
+
+        const root = await ensureInitialized();
+        if (!root) {
+            return;
+        }
+
+        overviewState.returnFilter = target.value || 'all';
+        overviewState.currentPage = 1;
         if (overviewState.openSection === 'lendOverview') {
             await loadOverviewItems(token, root);
         }

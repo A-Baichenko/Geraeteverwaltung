@@ -167,6 +167,8 @@ public class DBaccess_Reservierungsverwaltung {
         List<Geraet> geraete = em.createQuery(
                         "SELECT g FROM Geraet g " +
                                 "WHERE g.istAusleihbar = true " +
+                                "AND g.staendigerNutzer IS NULL " +
+                                "AND g.standort IS NULL " +
                                 "AND g.geraetetyp.id = :geraetetypId " +
                                 "AND NOT EXISTS (" +
                                 "SELECT a.ausleiheNr FROM Ausleihe a " +
@@ -204,7 +206,11 @@ public class DBaccess_Reservierungsverwaltung {
         validiereDatumsbereich(start, ende);
 
         Long nutzbareKapazitaet = em.createQuery(
-                        "SELECT COUNT(g) FROM Geraet g WHERE g.geraetetyp.id = :typId AND g.istAusleihbar = true",
+                        "SELECT COUNT(g) FROM Geraet g " +
+                                "WHERE g.geraetetyp.id = :typId " +
+                                "AND g.istAusleihbar = true " +
+                                "AND g.staendigerNutzer IS NULL " +
+                                "AND g.standort IS NULL",
                         Long.class)
                 .setParameter("typId", geraetetypId)
                 .getSingleResult();
@@ -252,7 +258,11 @@ public class DBaccess_Reservierungsverwaltung {
 
     private Geraet ermittleReservierbaresGeraet(Long geraetetypId, LocalDate von, LocalDate bis, Integer exklusiveReservierungId) {
         List<Geraet> kandidaten = em.createQuery(
-                        "SELECT g FROM Geraet g WHERE g.geraetetyp.id = :typId AND g.istAusleihbar = true ORDER BY g.inventarNr ASC",
+                        "SELECT g FROM Geraet g WHERE g.geraetetyp.id = :typId " +
+                                "AND g.istAusleihbar = true " +
+                                "AND g.staendigerNutzer IS NULL " +
+                                "AND g.standort IS NULL " +
+                                "ORDER BY g.inventarNr ASC",
                         Geraet.class)
                 .setParameter("typId", geraetetypId)
                 .getResultList();
@@ -295,7 +305,10 @@ public class DBaccess_Reservierungsverwaltung {
 
     private boolean istVerfuegbarExklusive(Long geraetetypId, LocalDate von, LocalDate bis, Integer exklusiveReservierungId) {
         Long verfuegbareGeraete = em.createQuery(
-                        "SELECT COUNT(g) FROM Geraet g WHERE g.geraetetyp.id = :typId AND g.istAusleihbar = true", Long.class)
+                        "SELECT COUNT(g) FROM Geraet g WHERE g.geraetetyp.id = :typId " +
+                                "AND g.istAusleihbar = true " +
+                                "AND g.staendigerNutzer IS NULL " +
+                                "AND g.standort IS NULL", Long.class)
                 .setParameter("typId", geraetetypId)
                 .getSingleResult();
 
@@ -341,11 +354,25 @@ public class DBaccess_Reservierungsverwaltung {
         return em.createQuery(
                         "SELECT COUNT(a) FROM Ausleihe a WHERE a.geraet.geraetetyp.id = :typId " +
                                 "AND a.geraet.istAusleihbar = true " +
+                                "AND a.geraet.staendigerNutzer IS NULL " +
+                                "AND a.geraet.standort IS NULL " +
                                 "AND a.ausleihdatum <= :tag " +
                                 "AND COALESCE(a.tatsaechlichesRueckgabedatum, a.vereinbartesRueckgabedatum) >= :tag", Long.class)
                 .setParameter("typId", geraetetypId)
                 .setParameter("tag", tag)
                 .getSingleResult();
+    }
+
+    public int loescheAbgeschlosseneAlteReservierungen(LocalDate stichtag) {
+        LocalDate wirksamerStichtag = stichtag != null ? stichtag : LocalDate.now();
+        return em.createQuery(
+                        "DELETE FROM Reservierung r " +
+                                "WHERE r.rueckgabedatum < :stichtag " +
+                                "AND NOT EXISTS (" +
+                                "SELECT a.ausleiheNr FROM Ausleihe a WHERE a.reservierung = r" +
+                                ")")
+                .setParameter("stichtag", wirksamerStichtag)
+                .executeUpdate();
     }
 
     private void validiereDatumsbereich(LocalDate ausleihdatum, LocalDate rueckgabedatum) {

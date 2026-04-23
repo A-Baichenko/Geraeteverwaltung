@@ -195,8 +195,17 @@ public class FestZuordnenController {
             }
         }
 
+        boolean sollFestZuordnen = mitarbeiter != null || raum != null;
+        if (sollFestZuordnen && !istFuerFesteZuordnungVerfuegbar(geraet.getInventarNr())) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(
+                    "error",
+                    "Gerät ist aktuell ausgeliehen oder reserviert und kann deshalb nicht fest zugeordnet werden"
+            ));
+        }
+
         geraet.setStaendigerNutzer(mitarbeiter);
         geraet.setStandort(raum);
+        geraet.aktualisiereStatusNachZuweisung();
 
         return ResponseEntity.ok(Map.of("message", "Feste Zuordnung gespeichert"));
     }
@@ -219,8 +228,33 @@ public class FestZuordnenController {
 
         geraet.setStaendigerNutzer(null);
         geraet.setStandort(null);
+        geraet.aktualisiereStatusNachZuweisung();
 
         return ResponseEntity.ok(Map.of("message", "Feste Zuordnung aufgehoben"));
+    }
+
+    private boolean istFuerFesteZuordnungVerfuegbar(Integer inventarNr) {
+        Long aktiveAusleihen = em.createQuery(
+                        "SELECT COUNT(a) FROM Ausleihe a WHERE a.geraet.inventarNr = :inventarNr " +
+                                "AND a.ausleihdatum <= CURRENT_DATE " +
+                                "AND COALESCE(a.tatsaechlichesRueckgabedatum, a.vereinbartesRueckgabedatum) >= CURRENT_DATE",
+                        Long.class)
+                .setParameter("inventarNr", inventarNr)
+                .getSingleResult();
+        if (aktiveAusleihen > 0) {
+            return false;
+        }
+
+        Long aktiveReservierungen = em.createQuery(
+                        "SELECT COUNT(r) FROM Reservierung r " +
+                                "WHERE r.reserviertesGeraet.inventarNr = :inventarNr " +
+                                "AND r.rueckgabedatum >= CURRENT_DATE " +
+                                "AND NOT EXISTS (SELECT a.ausleiheNr FROM Ausleihe a WHERE a.reservierung = r)",
+                        Long.class)
+                .setParameter("inventarNr", inventarNr)
+                .getSingleResult();
+
+        return aktiveReservierungen == 0;
     }
 
     private AppUser authenticatedManagerOrAdmin(HttpServletRequest request) {
