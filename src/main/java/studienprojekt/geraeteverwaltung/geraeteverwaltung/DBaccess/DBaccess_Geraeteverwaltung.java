@@ -142,7 +142,10 @@ public class DBaccess_Geraeteverwaltung {
                                 "WHERE EXISTS (" +
                                 "SELECT a.ausleiheNr FROM Ausleihe a WHERE a.geraet = g " +
                                 "AND a.ausleihdatum <= :tag " +
-                                "AND COALESCE(a.tatsaechlichesRueckgabedatum, a.vereinbartesRueckgabedatum) >= :tag" +
+                                "AND ( " +
+                                "(a.tatsaechlichesRueckgabedatum IS NULL AND a.vereinbartesRueckgabedatum >= :tag) " +
+                                "OR (a.tatsaechlichesRueckgabedatum IS NOT NULL AND a.tatsaechlichesRueckgabedatum > :tag)" +
+                                ")" +
                                 ")")
                 .setParameter("status", GeraetStatus.AUSGELIEHEN)
                 .setParameter("tag", referenz)

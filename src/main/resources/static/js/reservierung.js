@@ -479,10 +479,8 @@ export function registerReservierungAusleiheHandlers({
         }
 
         await initialisiereTab(token, !reservierungTabInitialized);
-        if (!reservierungTabInitialized) {
-            initialisiereDatepicker();
-            reservierungTabInitialized = true;
-        }
+        initialisiereDatepicker();
+        reservierungTabInitialized = true;
     });
 
     observer.observe(pageContent, { childList: true, subtree: true });
