@@ -112,6 +112,7 @@ public class DBaccess_Reservierungsverwaltung {
         if (!reservierung.getMitarbeiter().getPersonalNr().equals(personalNr)) {
             return false;
         }
+        loeseAusleiheBezugFuerAbgeschlosseneReservierung(reservierung);
         em.remove(reservierung);
         return true;
     }
@@ -121,6 +122,7 @@ public class DBaccess_Reservierungsverwaltung {
         if (reservierung == null) {
             return false;
         }
+        loeseAusleiheBezugFuerAbgeschlosseneReservierung(reservierung);
         em.remove(reservierung);
         return true;
     }
@@ -367,13 +369,24 @@ public class DBaccess_Reservierungsverwaltung {
 
     public int loescheAbgeschlosseneAlteReservierungen(LocalDate stichtag) {
         LocalDate wirksamerStichtag = stichtag != null ? stichtag : LocalDate.now();
-        return em.createQuery(
-                        "DELETE FROM Reservierung r " +
-                                "WHERE r.rueckgabedatum < :stichtag " +
-                                "AND NOT EXISTS (" +
-                                "SELECT a.ausleiheNr FROM Ausleihe a WHERE a.reservierung = r" +
-                                ")")
+        em.createQuery(
+                        "UPDATE Ausleihe a SET a.reservierung = NULL " +
+                                "WHERE a.reservierung.rueckgabedatum < :stichtag")
                 .setParameter("stichtag", wirksamerStichtag)
+                .executeUpdate();
+        return em.createQuery(
+                        "DELETE FROM Reservierung r WHERE r.rueckgabedatum < :stichtag")
+                .setParameter("stichtag", wirksamerStichtag)
+                .executeUpdate();
+    }
+
+    private void loeseAusleiheBezugFuerAbgeschlosseneReservierung(Reservierung reservierung) {
+        if (reservierung == null || !reservierung.getRueckgabedatum().isBefore(LocalDate.now())) {
+            return;
+        }
+        em.createQuery(
+                        "UPDATE Ausleihe a SET a.reservierung = NULL WHERE a.reservierung = :reservierung")
+                .setParameter("reservierung", reservierung)
                 .executeUpdate();
     }
 
