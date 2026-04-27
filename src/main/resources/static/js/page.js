@@ -6,6 +6,7 @@ import { registerRaumverwaltungHandlers } from './raumverwaltung.js';
 import { registerAusleiheHandlers } from './geraeteverwaltung/ausleihe.js';
 import { registerAusleiheUebersichtHandlers } from './geraeteverwaltung/ausleiheuebersicht.js';
 import { registerFestZuordnenHandlers } from './geraeteverwaltung/festzuordnen.js';
+import { registerHomeOverviewHandlers } from './home.js';
 
 const topNav = document.getElementById('topNav');
 const pageContent = document.getElementById('pageContent');
@@ -215,6 +216,16 @@ registerAusleiheUebersichtHandlers({
 });
 
 registerFestZuordnenHandlers({
+    pageContent,
+    getToken,
+    redirectToLogin,
+    getState: () => ({
+        activeTabKey,
+        allowedTabKeys
+    })
+});
+
+registerHomeOverviewHandlers({
     pageContent,
     getToken,
     redirectToLogin,
