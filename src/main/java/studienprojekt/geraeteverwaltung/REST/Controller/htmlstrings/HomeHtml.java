@@ -7,33 +7,60 @@ public final class HomeHtml {
 
     public static String content() {
         return """
-                <div class="board">\s
-                    <article class="column">\s
-                        <h2>Verfügbar</h2>
-                        <input type="search" placeholder="Suche" aria-label="Suche Verfügbar">\s
-                        <div class="card-item">Kategorie <span>Anz.</span></div>
-                    </article>
-                    <article class="column">\s
-                        <h2>Reserviert</h2>
-                        <input type="search" placeholder="Suche" aria-label="Suche Reserviert">\s
-                        <div class="card-item">Gerätetyp <span>Anz.</span></div>
-                    </article>
-                    <article class="column">\s
-                        <h2>Ausgeliehen</h2>
-                        <input type="search" placeholder="Suche" aria-label="Suche Ausgeliehen">\s
-                        <div class="card-item">Daten <span>id</span></div>
-                    </article>
-                    <article class="column">\s
-                        <h2>Überfällig</h2>
-                        <input type="search" placeholder="Suche" aria-label="Suche Überfällig">\s
-                        <div class="card-item">Daten <span>id</span></div>
-                    </article>
-                    <article class="column">\s
-                        <h2>Nicht-Ausleihbar</h2>
-                        <input type="search" placeholder="Suche" aria-label="Suche Nicht-Ausleihbar">\s
-                        <div class="card-item">Daten <span>id</span></div>
-                    </article>
-                </div>
-               \s""";
+                <section id="home-overview" data-module="home-overview">
+                    <header class="section-header">
+                        <h2>Home (Übersicht)</h2>
+                        <p class="section-subtitle">Statusübersicht der Geräteverwaltung.</p>
+                    </header>
+
+                    <div id="hm-overview-app" class="hm-overview-app">
+                        <div class="hm-board">
+                            <section class="hm-column" data-column="available">
+                                <div class="hm-column-header">
+                                    <h3>Verfügbar</h3>
+                                </div>
+                                <div class="hm-search-box">
+                                    <input id="hm-search-available" type="text" placeholder="Suche">
+                                </div>
+                                <ul id="hm-list-available" class="hm-list"></ul>
+                                <p id="hm-placeholder-available" class="hm-placeholder">Keine Einträge vorhanden.</p>
+                            </section>
+
+                            <section class="hm-column" data-column="reserved">
+                                <div class="hm-column-header">
+                                    <h3>Reserviert</h3>
+                                </div>
+                                <div class="hm-search-box">
+                                    <input id="hm-search-reserved" type="text" placeholder="Suche">
+                                </div>
+                                <ul id="hm-list-reserved" class="hm-list"></ul>
+                                <p id="hm-placeholder-reserved" class="hm-placeholder">Keine Einträge vorhanden.</p>
+                            </section>
+
+                            <section class="hm-column" data-column="lent">
+                                <div class="hm-column-header">
+                                    <h3>Ausgeliehen</h3>
+                                </div>
+                                <div class="hm-search-box">
+                                    <input id="hm-search-lent" type="text" placeholder="Suche">
+                                </div>
+                                <ul id="hm-list-lent" class="hm-list"></ul>
+                                <p id="hm-placeholder-lent" class="hm-placeholder">Keine Einträge vorhanden.</p>
+                            </section>
+
+                            <section class="hm-column" data-column="notLendable">
+                                <div class="hm-column-header">
+                                    <h3>Fest zuordnen</h3>
+                                </div>
+                                <div class="hm-search-box">
+                                    <input id="hm-search-not-lendable" type="text" placeholder="Suche">
+                                </div>
+                                <ul id="hm-list-not-lendable" class="hm-list"></ul>
+                                <p id="hm-placeholder-not-lendable" class="hm-placeholder">Keine Einträge vorhanden.</p>
+                            </section>
+                        </div>
+                    </div>
+                </section>
+                """;
     }
 }
