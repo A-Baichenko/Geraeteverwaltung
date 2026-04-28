@@ -18,7 +18,7 @@ const managerState = {
     activeRequest: null,
     activeFormDraft: null,
     isEditing: false,
-    openSections: new Set(['reservationRequests']),
+    openSections: new Set(),
     deviceSelection: {
         isOpen: false,
         items: [],

@@ -4,9 +4,11 @@ import io.jsonwebtoken.Claims;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.servlet.http.HttpServletRequest;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
@@ -74,10 +76,33 @@ public class HomeController {
                         Ausleihe.class)
                 .getResultList();
 
-        List<Map<String, Object>> available = alleGeraete.stream()
-                .filter(g -> g.isIstAusleihbar())
-                .filter(g -> aktiveAusleihen.stream().noneMatch(a -> a.getGeraet().getInventarNr().equals(g.getInventarNr())))
-                .filter(g -> offeneReservierungen.stream().noneMatch(r -> r.getGeraetetyp().getId().equals(g.getGeraetetyp().getId())))
+        List<Geraet> freieAusleihbareGeraete = alleGeraete.stream()
+                .filter(Geraet::isIstAusleihbar)
+                .filter(g -> !istAktivAusgeliehen(g, aktiveAusleihen))
+                .sorted(Comparator.comparing(Geraet::getInventarNr))
+                .toList();
+
+        Map<Long, Long> reservierungenProTyp = offeneReservierungen.stream()
+                .collect(Collectors.groupingBy(
+                        r -> r.getGeraetetyp().getId(),
+                        Collectors.counting()
+                ));
+
+        Map<Long, Integer> bereitsVerwendeteReservierungsSlots = new LinkedHashMap<>();
+
+        List<Map<String, Object>> available = freieAusleihbareGeraete.stream()
+                .filter(g -> {
+                    Long typId = g.getGeraetetyp().getId();
+                    long blockierteAnzahl = reservierungenProTyp.getOrDefault(typId, 0L);
+                    int bereitsVerwendet = bereitsVerwendeteReservierungsSlots.getOrDefault(typId, 0);
+
+                    if (bereitsVerwendet < blockierteAnzahl) {
+                        bereitsVerwendeteReservierungsSlots.put(typId, bereitsVerwendet + 1);
+                        return false;
+                    }
+
+                    return true;
+                })
                 .map(g -> createItem(
                         "Inventar #" + g.getInventarNr(),
                         g.getGeraetetyp().getHersteller() + " " + g.getGeraetetyp().getBezeichnung(),
@@ -121,6 +146,11 @@ public class HomeController {
         response.put("notLendable", notLendable);
 
         return ResponseEntity.ok(response);
+    }
+
+    private boolean istAktivAusgeliehen(Geraet geraet, List<Ausleihe> aktiveAusleihen) {
+        return aktiveAusleihen.stream()
+                .anyMatch(a -> a.getGeraet().getInventarNr().equals(geraet.getInventarNr()));
     }
 
     private Map<String, Object> createItem(String title, String subtitle, String meta1, String meta2) {

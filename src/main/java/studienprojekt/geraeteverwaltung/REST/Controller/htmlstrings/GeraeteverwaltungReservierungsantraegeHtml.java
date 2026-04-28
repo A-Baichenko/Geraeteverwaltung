@@ -131,7 +131,7 @@ public final class GeraeteverwaltungReservierungsantraegeHtml {
                         </div>
                     </section>
 
-                    <section class="gv-accordion-section is-open" data-section="reservationRequests">
+                    <section class="gv-accordion-section" data-section="reservationRequests">
                         <button type="button" class="gv-accordion-trigger" data-action="toggle-section" data-section-key="reservationRequests">
                             <span>Reservierungsanträge</span><span class="gv-chevron">▾</span>
                         </button>
