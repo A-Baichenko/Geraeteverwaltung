@@ -249,7 +249,8 @@ public final class GeraeteverwaltungReservierungsantraegeHtml {
                                                   </label>
                 
                                                   <label class="fz-field">
-                                                    <div class="fz-picker-field">
+                                                    <span>Mitarbeiter:</span>
+                                                          <div class="fz-picker-field">
                                                           <input id="fz-employee"
                                                                  name="employee"
                                                                  type="text"
@@ -262,7 +263,7 @@ public final class GeraeteverwaltungReservierungsantraegeHtml {
                                                                   aria-label="Mitarbeiter auswählen">⌕</button>
                                                     </div>
                                                   </label>
-                
+                                                  <span>Raum:</span>
                                                   <label class="fz-field">
                                                       <div class="fz-picker-field">
                                                           <input id="fz-room"
@@ -285,10 +286,7 @@ public final class GeraeteverwaltungReservierungsantraegeHtml {
                                                   <button type="button" class="fz-secondary-button" data-action="close-fixed-editor">Abbrechen</button>
                                               </div>
                                           </section>
-                                      </div>
-                                  </div>
-                              </section>
-                                <section id="fz-search-panel" class="fz-slide-panel">
+                                      <section id="fz-search-panel" class="fz-slide-panel">
                                               <div class="fz-panel-header">
                                                   <h3>Suche</h3>
                                                   <button type="button"
@@ -308,7 +306,10 @@ public final class GeraeteverwaltungReservierungsantraegeHtml {
                                               <ul id="fz-search-results" class="fz-list"></ul>
                                               <p id="fz-search-error" class="fz-error-text"></p>
                                               <p id="fz-search-placeholder" class="fz-placeholder">Noch keine Einträge vorhanden.</p>
-                                </section> 
+                                            </section>
+                                        </div>
+                                    </div>
+                                </section>
 
                     <section class="al-accordion-section" data-section="lend">
                                   <button type="button" class="al-accordion-trigger" data-action="toggle-section" data-section-key="lend">

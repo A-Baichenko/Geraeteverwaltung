@@ -108,14 +108,11 @@
     padding: 0.9rem;
     background: #fff;
     min-height: 100%;
-    transform: translateY(-10px);
-    opacity: 0.5;
-    transition: all 160ms ease-in;
+    display: none;
 }
 
 .fz-slide-panel.is-open {
-    transform: translateY(0);
-    opacity: 1;
+    display: block;
 }
 
 .fz-fields {
