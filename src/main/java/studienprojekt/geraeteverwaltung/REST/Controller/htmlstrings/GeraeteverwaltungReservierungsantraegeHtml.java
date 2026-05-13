@@ -116,11 +116,21 @@ public final class GeraeteverwaltungReservierungsantraegeHtml {
 
                                     <p id="ga-create-search-title" class="ga-section-subtitle">Suche</p>
 
-                                    <div class="ga-search-box">
-                                        <input id="ga-create-search-input"
-                                               name="createSearch"
-                                               type="text"
-                                               placeholder="Filter eingeben">
+                                    <div class="ga-search-toolbar">
+                                        <div class="ga-search-box">
+                                            <input id="ga-create-search-input"
+                                                name="createSearch"
+                                                type="text"
+                                                placeholder="Filter für Gerätetypen, Mitarbeiter oder Räume eingeben">
+                                        </div>
+                                        <div class="ga-type-actions">
+                                            <button type="button"
+                                                class="ga-management-button"
+                                                data-action="open-create-device-type-modal">Gerätetyp anlegen</button>
+                                            <button type="button"
+                                                class="ga-management-button ga-secondary-button"
+                                                data-action="open-create-category-modal">Kategorie anlegen</button>
+                                        </div>
                                     </div>
 
                                     <ul id="ga-create-search-results" class="ga-list"></ul>
@@ -130,7 +140,48 @@ public final class GeraeteverwaltungReservierungsantraegeHtml {
                             </div>
                         </div>
                     </section>
+                       <div id="ga-create-management-modal" class="ga-device-modal" aria-hidden="true">
+                        <div class="ga-device-modal-card ga-management-modal-card" role="dialog" aria-modal="true" aria-labelledby="ga-management-modal-title">
+                            <div class="ga-panel-header">
+                                <div>
+                                    <h3 id="ga-management-modal-title">Gerätetyp anlegen</h3>
+                                    <p id="ga-management-modal-subtitle" class="ga-section-subtitle">Neuen Gerätetyp mit Kategorie erfassen.</p>
+                                </div>
+                                <button type="button" class="ga-icon-button" data-action="close-create-management-modal" aria-label="Popup schließen">✕</button>
+                            </div>
 
+                            <p id="ga-management-modal-message" class="ga-error-text"></p>
+
+                            <form id="ga-device-type-form" class="ga-management-form">
+                                <label class="ga-field ga-management-field">
+                                    <span>Hersteller:</span>
+                                    <input id="ga-device-type-manufacturer" name="deviceTypeManufacturer" type="text" placeholder="z. B. Dell">
+                                </label>
+                                <label class="ga-field ga-management-field">
+                                    <span>Bezeichnung:</span>
+                                    <input id="ga-device-type-name" name="deviceTypeName" type="text" placeholder="z. B. Latitude 5450">
+                                </label>
+                                <label class="ga-field ga-management-field">
+                                    <span>Kategorie:</span>
+                                    <select id="ga-device-type-category" name="deviceTypeCategory">
+                                        <option value="">Kategorie auswählen</option>
+                                    </select>
+                                </label>
+                            </form>
+
+                            <form id="ga-category-form" class="ga-management-form">
+                                <label class="ga-field ga-management-field">
+                                    <span>Kategorie:</span>
+                                    <input id="ga-category-name" name="categoryName" type="text" placeholder="z. B. Notebook">
+                                </label>
+                            </form>
+
+                            <div class="ga-device-modal-actions">
+                                <button type="button" class="ga-secondary-button" data-action="close-create-management-modal">Abbrechen</button>
+                                <button type="button" data-action="save-create-management-modal">Speichern</button>
+                            </div>
+                        </div>
+                    </div>
                     <section class="gv-accordion-section" data-section="reservationRequests">
                         <button type="button" class="gv-accordion-trigger" data-action="toggle-section" data-section-key="reservationRequests">
                             <span>Reservierungsanträge</span><span class="gv-chevron">▾</span>

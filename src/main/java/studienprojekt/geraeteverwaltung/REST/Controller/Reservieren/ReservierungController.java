@@ -1,4 +1,4 @@
-package studienprojekt.geraeteverwaltung.REST.Controller;
+package studienprojekt.geraeteverwaltung.REST.Controller.Reservieren;
 
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.http.HttpServletRequest;

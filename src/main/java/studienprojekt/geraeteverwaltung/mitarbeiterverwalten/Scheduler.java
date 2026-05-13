@@ -1,4 +1,5 @@
 package studienprojekt.geraeteverwaltung.mitarbeiterverwalten;
 
-public class base {
+// Macht Aktuell nix
+public class Scheduler {
 }

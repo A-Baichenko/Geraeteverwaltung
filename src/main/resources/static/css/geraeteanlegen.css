@@ -291,3 +291,80 @@
     color: #1f7a35;
     margin: 0 0 0.75rem 0;
 }
+
+.ga-search-toolbar {
+    display: grid;
+    grid-template-columns: minmax(220px, 1fr) auto;
+    gap: 0.75rem;
+    align-items: start;
+    margin-bottom: 0.8rem;
+}
+
+.ga-search-toolbar .ga-search-box {
+    margin-bottom: 0;
+}
+
+.ga-search-toolbar .ga-search-box input {
+    border-right: 1px solid #cfcfcf;
+    border-radius: 6px;
+}
+
+.ga-type-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    justify-content: flex-end;
+}
+
+.ga-management-button,
+.ga-device-modal-actions button {
+    border: 1px solid #d0d0d0;
+    border-radius: 6px;
+    background: #fff;
+    padding: 0.55rem 0.9rem;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.ga-management-button:first-child {
+    border-color: #8ba8d8;
+    background: #f1f6ff;
+    font-weight: 600;
+}
+
+.ga-management-modal-card {
+    width: min(620px, 100%);
+}
+
+.ga-management-form {
+    display: grid;
+    gap: 0.9rem;
+    margin-top: 0.8rem;
+}
+
+.ga-management-field {
+    grid-template-columns: 140px 1fr;
+}
+
+.ga-management-field select {
+    width: 100%;
+    border: 1px solid #cfcfcf;
+    border-radius: 4px;
+    padding: 0.55rem 0.8rem;
+    background: #fff;
+    box-sizing: border-box;
+}
+
+@media (max-width: 900px) {
+    .ga-search-toolbar {
+        grid-template-columns: 1fr;
+    }
+
+    .ga-type-actions {
+        justify-content: stretch;
+    }
+
+    .ga-management-button {
+        flex: 1;
+    }
+}

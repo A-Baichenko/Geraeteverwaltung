@@ -1,4 +1,5 @@
 package studienprojekt.geraeteverwaltung.raumverwaltung;
 
-public class base {
+// Macht Aktuell nix
+public class Scheduler {
 }

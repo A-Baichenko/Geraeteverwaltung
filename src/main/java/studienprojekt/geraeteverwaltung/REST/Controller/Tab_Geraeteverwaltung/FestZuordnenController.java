@@ -1,4 +1,4 @@
-package studienprojekt.geraeteverwaltung.REST.Controller;
+package studienprojekt.geraeteverwaltung.REST.Controller.Tab_Geraeteverwaltung;
 
 import io.jsonwebtoken.Claims;
 import jakarta.persistence.EntityManager;
