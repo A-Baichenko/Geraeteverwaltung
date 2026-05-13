@@ -16,7 +16,8 @@ const state = {
         ergebnisse: []
     },
     liste: {
-        reservierungen: []
+        reservierungen: [],
+        filter: 'AKTIV'
     }
 };
 
@@ -179,23 +180,53 @@ function rendereReservierungsliste() {
         return;
     }
 
+    aktualisiereReservierungsfilterButtons();
+
     if (!state.liste.reservierungen.length) {
         list.innerHTML = '<li class="empty-list-item">Noch keine Reservierungen vorhanden.</li>';
         return;
     }
 
-    list.innerHTML = state.liste.reservierungen.map((eintrag) => `
-        <li class="reservation-item">
-            <div>
-                <strong>${eintrag.geraetetypName}</strong>
-                <div>${eintrag.ausleihdatum} bis ${eintrag.rueckgabedatum}</div>
-            </div>
-            <div class="reservation-actions">
+    const gefilterteReservierungen = state.liste.reservierungen.filter((eintrag) => eintrag.status === state.liste.filter);
+    if (!gefilterteReservierungen.length) {
+        const leerText = state.liste.filter === 'AKTIV'
+            ? 'Keine aktiven Reservierungen vorhanden.'
+            : 'Keine abgeschlossenen Reservierungen vorhanden.';
+        list.innerHTML = `<li class="empty-list-item">${leerText}</li>`;
+        return;
+    }
+
+    list.innerHTML = gefilterteReservierungen.map((eintrag) => {
+        const istAbgeschlossen = eintrag.status === 'ABGESCHLOSSEN';
+        const statusText = istAbgeschlossen
+            ? `Abgeschlossen${eintrag.tatsaechlichesRueckgabedatum ? ` am ${eintrag.tatsaechlichesRueckgabedatum}` : ''}`
+            : 'Aktiv';
+        const actions = istAbgeschlossen
+            ? '<span class="reservation-history-note">Nur Verlauf</span>'
+            : `
                 <button type="button" data-edit-id="${eintrag.reservierungsNr}">Bearbeiten</button>
                 <button type="button" class="danger-button" data-delete-id="${eintrag.reservierungsNr}">Löschen</button>
-            </div>
-        </li>
-    `).join('');
+            `;
+
+        return `
+            <li class="reservation-item ${istAbgeschlossen ? 'reservation-item-completed' : ''}">
+                <div>
+                    <strong>${eintrag.geraetetypName}</strong>
+                    <div>${eintrag.ausleihdatum} bis ${eintrag.rueckgabedatum}</div>
+                    <small class="reservation-status">${statusText}</small>
+                </div>
+                <div class="reservation-actions">
+                    ${actions}
+                </div>
+            </li>
+        `;
+    }).join('');
+}
+
+function aktualisiereReservierungsfilterButtons() {
+    document.querySelectorAll('[data-reservierungsfilter]').forEach((button) => {
+        button.classList.toggle('active-filter', button.dataset.reservierungsfilter === state.liste.filter);
+    });
 }
 
 function validiereForm(formular) {
@@ -391,7 +422,7 @@ export function registerReservierungAusleiheHandlers({
     let warReservierungTabAktiv = false;
     pageContent.addEventListener('click', async (event) => {
         const target = event.target.closest(
-            '#btn-reservierung-speichern, #btn-reservierung-abbrechen, [data-geraetetyp-id], [data-edit-id], [data-delete-id]'
+            '#btn-reservierung-speichern, #btn-reservierung-abbrechen, [data-reservierungsfilter], [data-geraetetyp-id], [data-edit-id], [data-delete-id]'
         );
 
         if (!target) {
@@ -411,6 +442,12 @@ export function registerReservierungAusleiheHandlers({
 
         if (target.id === 'btn-reservierung-abbrechen') {
             resetFormular();
+            return;
+        }
+
+        if (target.dataset.reservierungsfilter) {
+            state.liste.filter = target.dataset.reservierungsfilter;
+            rendereReservierungsliste();
             return;
         }
 

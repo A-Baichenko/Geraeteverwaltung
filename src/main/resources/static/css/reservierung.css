@@ -119,3 +119,34 @@
         min-height: auto;
     }
 }
+.reservation-filter {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.filter-button {
+    flex: 1;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #d0d0d0;
+    border-radius: 6px;
+    background: #fff;
+    cursor: pointer;
+}
+
+.filter-button:hover,
+.active-filter {
+    border-color: #2f6fed;
+    background: #f2f7ff;
+    color: #174ea6;
+}
+
+.reservation-item-completed {
+    background: #fafafa;
+    color: #555;
+}
+
+.reservation-status,
+.reservation-history-note {
+    color: #666;
+    font-size: 0.85rem;
+}
