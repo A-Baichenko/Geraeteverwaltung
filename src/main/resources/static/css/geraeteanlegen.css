@@ -294,9 +294,9 @@
 
 .ga-search-toolbar {
     display: grid;
-    grid-template-columns: minmax(220px, 1fr) auto;
-    gap: 0.75rem;
-    align-items: start;
+    grid-template-columns: 1fr;
+    gap: 0.65rem;
+    align-items: stretch;
     margin-bottom: 0.8rem;
 }
 
@@ -314,6 +314,7 @@
     flex-wrap: wrap;
     gap: 0.5rem;
     justify-content: flex-end;
+    align-items: center;
 }
 
 .ga-management-button,
@@ -326,10 +327,9 @@
     white-space: nowrap;
 }
 
-.ga-management-button:first-child {
-    border-color: #8ba8d8;
-    background: #f1f6ff;
-    font-weight: 600;
+.ga-management-button {
+    min-width: 170px;
+    text-align: center;
 }
 
 .ga-management-modal-card {
@@ -356,9 +356,6 @@
 }
 
 @media (max-width: 900px) {
-    .ga-search-toolbar {
-        grid-template-columns: 1fr;
-    }
 
     .ga-type-actions {
         justify-content: stretch;
@@ -366,5 +363,6 @@
 
     .ga-management-button {
         flex: 1;
+        min-width: 0;
     }
 }

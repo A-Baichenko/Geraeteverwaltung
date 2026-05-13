@@ -468,6 +468,22 @@ async function refreshDeviceManagementHtml(token) {
     managerState.deviceManagement.hierarchyHtml = data.html || '';
 }
 
+async function reloadDeviceManagement(token, root) {
+    managerState.deviceManagement.loading = true;
+    renderManagerView(root);
+
+    try {
+        await refreshDeviceManagementHtml(token);
+        managerState.deviceManagement.error = null;
+    } catch (error) {
+        managerState.deviceManagement.error = error.message;
+        managerState.deviceManagement.hierarchyHtml = '';
+    } finally {
+        managerState.deviceManagement.loading = false;
+        renderManagerView(root);
+    }
+}
+
 async function initializeManagerFlow(token, getState, pageContent) {
     const tabState = getState();
     if (tabState.activeTabKey !== 'geraeteverwaltung') {
@@ -533,10 +549,16 @@ export function registerGeraeteverwaltungHandlers({ pageContent, getToken, redir
         try {
             if (action === 'toggle-section' && managerAccordionSections.has(target.dataset.sectionKey)) {
                 const sectionKey = target.dataset.sectionKey;
-                if (managerState.openSections.has(sectionKey)) {
-                    managerState.openSections.delete(sectionKey);
-                } else {
+                const opensSection = !managerState.openSections.has(sectionKey);
+                if (opensSection) {
                     managerState.openSections.add(sectionKey);
+                } else {
+                    managerState.openSections.delete(sectionKey);
+                }
+
+                if (sectionKey === 'deviceManagement' && opensSection) {
+                    await reloadDeviceManagement(token, root);
+                    return;
                 }
             }
 
@@ -774,6 +796,16 @@ export function registerGeraeteverwaltungHandlers({ pageContent, getToken, redir
         }
 
         managerState.activeFormDraft[target.dataset.fieldKey] = target.value;
+    });
+
+    window.addEventListener('geraeteverwaltung:device-data-changed', async () => {
+        const token = getToken();
+        const root = pageContent.querySelector('#gv-manager-app');
+        if (!token || !root || root.dataset.initialized !== 'true') {
+            return;
+        }
+
+        await reloadDeviceManagement(token, root);
     });
 
     pageContent.addEventListener('change', (event) => {

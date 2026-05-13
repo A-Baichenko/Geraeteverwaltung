@@ -8,6 +8,7 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Locale;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -24,6 +25,7 @@ import studienprojekt.geraeteverwaltung.geraeteverwaltung.DBaccess.DBaccess_Gera
 import studienprojekt.geraeteverwaltung.geraeteverwaltung.DBaccess.entity.Geraet;
 import studienprojekt.geraeteverwaltung.geraeteverwaltung.DBaccess.entity.GeraetStatus;
 import studienprojekt.geraeteverwaltung.geraeteverwaltung.DBaccess.entity.Geraetetyp;
+import studienprojekt.geraeteverwaltung.geraeteverwaltung.DBaccess.entity.Kategorie;
 import studienprojekt.geraeteverwaltung.mitarbeiterverwalten.DBaccess.DBaccess_AppUserverwaltung;
 import studienprojekt.geraeteverwaltung.mitarbeiterverwalten.DBaccess.DBaccess_Mitarbeiterverwaltung;
 import studienprojekt.geraeteverwaltung.mitarbeiterverwalten.DBaccess.entity.AppUser;
@@ -171,6 +173,25 @@ public class GeraeteverwaltungUebersichtController {
 
         Map<Long, KategorieNode> kategorien = new LinkedHashMap<>();
 
+        if (statusFilter == null) {
+            for (Kategorie kategorie : dbaccessGeraeteverwaltung.getKategorien()) {
+                if (matchesKategorieFilter(kategorie, query)) {
+                    kategorien.putIfAbsent(kategorie.getId(),
+                            new KategorieNode(kategorie.getId(), kategorie.getBezeichnung(), new LinkedHashMap<>()));
+                }
+            }
+
+            for (Geraetetyp typ : dbaccessGeraeteverwaltung.findeGeraetetypenNachFilter(null)) {
+                if (matchesGeraetetypFilter(typ, query)) {
+                    KategorieNode kategorieNode = kategorien.computeIfAbsent(typ.getKategorie().getId(),
+                            ignored -> new KategorieNode(typ.getKategorie().getId(), typ.getKategorie().getBezeichnung(), new LinkedHashMap<>()));
+                    kategorieNode.geraetetypen().putIfAbsent(typ.getId(),
+                            new GeraetetypNode(typ.getId(), typ.getHersteller(), typ.getBezeichnung(), new ArrayList<>()));
+                }
+            }
+        }
+
+
         for (Geraet geraet : geraete) {
             Long kategorieId = geraet.getGeraetetyp().getKategorie().getId();
             KategorieNode kategorieNode = kategorien.computeIfAbsent(kategorieId,
@@ -221,6 +242,24 @@ public class GeraeteverwaltungUebersichtController {
                                 .toList()
                 ))
                 .toList();
+    }
+
+    private boolean matchesKategorieFilter(Kategorie kategorie, String query) {
+        if (query == null || query.isBlank()) {
+            return true;
+        }
+        return kategorie.getBezeichnung().toLowerCase(Locale.ROOT).contains(query.toLowerCase(Locale.ROOT));
+    }
+
+    private boolean matchesGeraetetypFilter(Geraetetyp typ, String query) {
+        if (query == null || query.isBlank()) {
+            return true;
+        }
+
+        String filter = query.toLowerCase(Locale.ROOT);
+        return typ.getHersteller().toLowerCase(Locale.ROOT).contains(filter)
+                || typ.getBezeichnung().toLowerCase(Locale.ROOT).contains(filter)
+                || typ.getKategorie().getBezeichnung().toLowerCase(Locale.ROOT).contains(filter);
     }
 
     private String renderHierarchyHtml(List<Map<String, Object>> categories, String query, String statusFilter) {
@@ -281,30 +320,34 @@ public class GeraeteverwaltungUebersichtController {
                     ));
                 }
 
-                if (!deviceHtml.isEmpty()) {
-                    typeHtml.append("""
-                            <details class="dm-level dm-type" open>
-                                <summary class="dm-row dm-type-row">%s</summary>
-                                <div class="dm-device-list">%s</div>
-                            </details>
-                            """.formatted(
-                            escapeHtml(String.valueOf(type.get("name"))),
-                            deviceHtml
-                    ));
-                }
-            }
+                String renderedDevices = deviceHtml.isEmpty()
+                        ? "<p class=\"placeholder\">Noch keine Geräte für diesen Gerätetyp vorhanden.</p>"
+                        : deviceHtml.toString();
 
-            if (!typeHtml.isEmpty()) {
-                html.append("""
-                        <details class="dm-level dm-category" open>
-                            <summary class="dm-row dm-category-row"><strong>%s</strong></summary>
-                            %s
+                typeHtml.append("""
+                        <details class="dm-level dm-type" open>
+                            <summary class="dm-row dm-type-row">%s</summary>
+                            <div class="dm-device-list">%s</div>
                         </details>
                         """.formatted(
-                        escapeHtml(String.valueOf(category.get("name"))),
-                        typeHtml
+                        escapeHtml(String.valueOf(type.get("name"))),
+                        renderedDevices
                 ));
             }
+
+            String renderedTypes = typeHtml.isEmpty()
+                    ? "<p class=\"placeholder\">Noch keine Gerätetypen in dieser Kategorie vorhanden.</p>"
+                    : typeHtml.toString();
+
+            html.append("""
+                    <details class="dm-level dm-category" open>
+                        <summary class="dm-row dm-category-row"><strong>%s</strong></summary>
+                        %s
+                    </details>
+                    """.formatted(
+                    escapeHtml(String.valueOf(category.get("name"))),
+                    renderedTypes
+            ));
         }
 
         if (html.isEmpty()) {
