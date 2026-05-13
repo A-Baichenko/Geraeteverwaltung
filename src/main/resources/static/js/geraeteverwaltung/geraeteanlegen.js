@@ -4,13 +4,18 @@ const createDeviceState = {
     selectedDeviceType: null,
     selectedEmployee: null,
     selectedRoom: null,
+    managementModal: null,
+    categories: [],
     loading: {
         action: false,
-        search: false
+        search: false,
+        management: false
     },
     error: null,
     success: false,
     searchError: null,
+    managementError: null,
+    managementSuccess: false,
     searchResults: []
 };
 
@@ -58,6 +63,55 @@ async function fetchSearchResults(token, target, query = '') {
     return Array.isArray(data) ? data : [];
 }
 
+async function fetchCategories(token) {
+    const response = await fetch('/api/geraeteverwaltung/create-devices/categories', {
+        headers: authHeaders(token)
+    });
+
+    const data = await response.json().catch(() => ([]));
+    if (!response.ok) {
+        throw new Error(data.error || 'Kategorien konnten nicht geladen werden.');
+    }
+
+    return Array.isArray(data) ? data : [];
+}
+
+async function submitCreateDeviceType(token, payload) {
+    const response = await fetch('/api/geraeteverwaltung/create-devices/device-types', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            ...authHeaders(token)
+        },
+        body: JSON.stringify(payload)
+    });
+
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+        throw new Error(data.error || 'Gerätetyp konnte nicht angelegt werden.');
+    }
+
+    return data;
+}
+
+async function submitCreateCategory(token, payload) {
+    const response = await fetch('/api/geraeteverwaltung/create-devices/categories', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            ...authHeaders(token)
+        },
+        body: JSON.stringify(payload)
+    });
+
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+        throw new Error(data.error || 'Kategorie konnte nicht angelegt werden.');
+    }
+
+    return data;
+}
+
 async function submitCreateDevice(token, payload) {
     const response = await fetch('/api/geraeteverwaltung/create-devices', {
         method: 'POST',
@@ -100,6 +154,21 @@ function parseIntegerOrNull(value) {
 
     const parsed = Number.parseInt(String(value).trim(), 10);
     return Number.isNaN(parsed) ? null : parsed;
+}
+
+function resetManagementForm(root) {
+    const manufacturer = root.querySelector('#ga-device-type-manufacturer');
+    const deviceTypeName = root.querySelector('#ga-device-type-name');
+    const category = root.querySelector('#ga-device-type-category');
+    const categoryName = root.querySelector('#ga-category-name');
+
+    if (manufacturer) manufacturer.value = '';
+    if (deviceTypeName) deviceTypeName.value = '';
+    if (category) category.value = '';
+    if (categoryName) categoryName.value = '';
+
+    createDeviceState.managementError = null;
+    createDeviceState.managementSuccess = false;
 }
 
 function resetCreateForm(root) {
@@ -149,6 +218,40 @@ function createPayload(root) {
         mitarbeiterPersonalNr,
         raumNr
     };
+}
+
+function createDeviceTypePayload(root) {
+    return {
+        hersteller: root.querySelector('#ga-device-type-manufacturer')?.value?.trim() || '',
+        bezeichnung: root.querySelector('#ga-device-type-name')?.value?.trim() || '',
+        kategorieId: parseIntegerOrNull(root.querySelector('#ga-device-type-category')?.value)
+    };
+}
+
+function createCategoryPayload(root) {
+    return {
+        bezeichnung: root.querySelector('#ga-category-name')?.value?.trim() || ''
+    };
+}
+
+function validateDeviceTypePayload(payload) {
+    if (!payload.hersteller) {
+        return 'Hersteller ist erforderlich.';
+    }
+    if (!payload.bezeichnung) {
+        return 'Bezeichnung ist erforderlich.';
+    }
+    if (payload.kategorieId == null) {
+        return 'Kategorie ist erforderlich.';
+    }
+    return null;
+}
+
+function validateCategoryPayload(payload) {
+    if (!payload.bezeichnung) {
+        return 'Kategorie-Bezeichnung ist erforderlich.';
+    }
+    return null;
 }
 
 function validatePayload(payload) {
@@ -258,6 +361,52 @@ function renderCreateDeviceView(root) {
         } else {
             searchPlaceholder.style.display = 'none';
         }
+    }
+
+    const modal = root.querySelector('#ga-create-management-modal');
+    if (modal) {
+        modal.classList.toggle('is-open', Boolean(createDeviceState.managementModal));
+        modal.setAttribute('aria-hidden', createDeviceState.managementModal ? 'false' : 'true');
+    }
+
+    const modalTitle = root.querySelector('#ga-management-modal-title');
+    const modalSubtitle = root.querySelector('#ga-management-modal-subtitle');
+    const deviceTypeForm = root.querySelector('#ga-device-type-form');
+    const categoryForm = root.querySelector('#ga-category-form');
+    const categorySelect = root.querySelector('#ga-device-type-category');
+    const modalMessage = root.querySelector('#ga-management-modal-message');
+    const modalSaveButton = root.querySelector('[data-action="save-create-management-modal"]');
+
+    if (modalTitle) {
+        modalTitle.textContent = createDeviceState.managementModal === 'category' ? 'Kategorie anlegen' : 'Gerätetyp anlegen';
+    }
+    if (modalSubtitle) {
+        modalSubtitle.textContent = createDeviceState.managementModal === 'category'
+            ? 'Neue Kategorie für Gerätetypen erfassen.'
+            : 'Neuen Gerätetyp eindeutig mit Hersteller, Bezeichnung und Kategorie erfassen.';
+    }
+    if (deviceTypeForm) {
+        deviceTypeForm.style.display = createDeviceState.managementModal === 'deviceType' ? 'grid' : 'none';
+    }
+    if (categoryForm) {
+        categoryForm.style.display = createDeviceState.managementModal === 'category' ? 'grid' : 'none';
+    }
+    if (categorySelect) {
+        const selectedValue = categorySelect.value;
+        categorySelect.innerHTML = '<option value="">Kategorie auswählen</option>' + createDeviceState.categories.map((category) => `
+            <option value="${category.id ?? ''}">${escapeHtml(category.bezeichnung || category.label || 'Ohne Bezeichnung')}</option>
+        `).join('');
+        categorySelect.value = selectedValue;
+    }
+    if (modalMessage) {
+        modalMessage.textContent = createDeviceState.managementError || '';
+        modalMessage.style.display = createDeviceState.managementError ? 'block' : 'none';
+        modalMessage.classList.toggle('ga-success-text', Boolean(createDeviceState.managementSuccess));
+        modalMessage.classList.toggle('ga-error-text', !createDeviceState.managementSuccess);
+    }
+    if (modalSaveButton) {
+        modalSaveButton.disabled = createDeviceState.loading.management;
+        modalSaveButton.textContent = createDeviceState.loading.management ? 'Speichern …' : 'Speichern';
     }
 
     const saveButton = root.querySelector('[data-action="create-device"]');
@@ -391,6 +540,83 @@ export function registerGeraeteanlegenHandlers({ pageContent, getToken, redirect
                 createDeviceState.currentSearchTarget = null;
                 createDeviceState.searchResults = [];
                 createDeviceState.searchError = null;
+                renderCreateDeviceView(root);
+                return;
+            }
+
+            if (action === 'open-create-device-type-modal') {
+                createDeviceState.managementModal = 'deviceType';
+                createDeviceState.managementError = null;
+                createDeviceState.managementSuccess = false;
+                createDeviceState.categories = await fetchCategories(token);
+                resetManagementForm(root);
+                createDeviceState.managementModal = 'deviceType';
+                renderCreateDeviceView(root);
+                return;
+            }
+
+            if (action === 'open-create-category-modal') {
+                createDeviceState.managementModal = 'category';
+                createDeviceState.managementError = null;
+                createDeviceState.managementSuccess = false;
+                resetManagementForm(root);
+                createDeviceState.managementModal = 'category';
+                renderCreateDeviceView(root);
+                return;
+            }
+
+            if (action === 'close-create-management-modal') {
+                createDeviceState.managementModal = null;
+                resetManagementForm(root);
+                renderCreateDeviceView(root);
+                return;
+            }
+
+            if (action === 'save-create-management-modal') {
+                if (createDeviceState.loading.management || !createDeviceState.managementModal) {
+                    return;
+                }
+
+                const isDeviceType = createDeviceState.managementModal === 'deviceType';
+                const payload = isDeviceType ? createDeviceTypePayload(root) : createCategoryPayload(root);
+                const validationError = isDeviceType ? validateDeviceTypePayload(payload) : validateCategoryPayload(payload);
+                if (validationError) {
+                    createDeviceState.managementError = validationError;
+                    createDeviceState.managementSuccess = false;
+                    renderCreateDeviceView(root);
+                    return;
+                }
+
+                createDeviceState.loading.management = true;
+                createDeviceState.managementError = null;
+                createDeviceState.managementSuccess = false;
+                renderCreateDeviceView(root);
+
+                if (isDeviceType) {
+                    const result = await submitCreateDeviceType(token, payload);
+                    createDeviceState.selectedDeviceType = {
+                        id: result.id,
+                        label: result.label || `${payload.hersteller} ${payload.bezeichnung}`
+                    };
+                    createDeviceState.currentSearchTarget = null;
+                    createDeviceState.searchResults = [];
+                    createDeviceState.managementModal = null;
+                    resetManagementForm(root);
+                    createDeviceState.error = result.message || 'Gerätetyp wurde angelegt.';
+                    createDeviceState.success = true;
+                } else {
+                    const result = await submitCreateCategory(token, payload);
+                    resetManagementForm(root);
+                    createDeviceState.managementModal = 'deviceType';
+                    createDeviceState.categories = await fetchCategories(token);
+                    createDeviceState.managementError = result.message || 'Kategorie wurde angelegt. Du kannst sie jetzt für den Gerätetyp auswählen.';
+                    createDeviceState.managementSuccess = true;
+                    const categorySelect = root.querySelector('#ga-device-type-category');
+                    if (categorySelect && result.id != null) {
+                        renderCreateDeviceView(root);
+                        categorySelect.value = String(result.id);
+                    }
+                }
                 renderCreateDeviceView(root);
                 return;
             }

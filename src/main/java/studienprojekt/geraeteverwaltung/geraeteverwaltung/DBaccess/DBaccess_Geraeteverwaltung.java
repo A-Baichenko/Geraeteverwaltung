@@ -72,7 +72,26 @@ public class DBaccess_Geraeteverwaltung {
     }
 
     public List<Kategorie> getKategorien() {
-        return em.createQuery("SELECT k FROM Kategorie k", Kategorie.class).getResultList();
+        return em.createQuery("SELECT k FROM Kategorie k ORDER BY k.bezeichnung", Kategorie.class).getResultList();
+    }
+
+    public Kategorie sucheKategorieById(Long id) {
+        return em.find(Kategorie.class, id);
+    }
+
+    public Kategorie sucheKategorieNachBezeichnung(String bezeichnung) {
+        if (bezeichnung == null || bezeichnung.isBlank()) {
+            return null;
+        }
+
+        List<Kategorie> kategorien = em.createQuery(
+                        "SELECT k FROM Kategorie k WHERE LOWER(k.bezeichnung) = :bezeichnung",
+                        Kategorie.class)
+                .setParameter("bezeichnung", bezeichnung.trim().toLowerCase(Locale.ROOT))
+                .setMaxResults(1)
+                .getResultList();
+
+        return kategorien.isEmpty() ? null : kategorien.get(0);
     }
 
     public List<Geraet> findeAlleGeraeteMitDetails() {
@@ -188,6 +207,25 @@ public class DBaccess_Geraeteverwaltung {
 
     public Geraetetyp sucheGeraetetypById(Long id) {
         return em.find(Geraetetyp.class, id);
+    }
+
+    public Geraetetyp sucheGeraetetyp(String hersteller, String bezeichnung, Long kategorieId) {
+        if (hersteller == null || hersteller.isBlank() || bezeichnung == null || bezeichnung.isBlank() || kategorieId == null) {
+            return null;
+        }
+
+        List<Geraetetyp> geraetetypen = em.createQuery(
+                        "SELECT g FROM Geraetetyp g WHERE LOWER(g.hersteller) = :hersteller " +
+                                "AND LOWER(g.bezeichnung) = :bezeichnung " +
+                                "AND g.kategorie.id = :kategorieId",
+                        Geraetetyp.class)
+                .setParameter("hersteller", hersteller.trim().toLowerCase(Locale.ROOT))
+                .setParameter("bezeichnung", bezeichnung.trim().toLowerCase(Locale.ROOT))
+                .setParameter("kategorieId", kategorieId)
+                .setMaxResults(1)
+                .getResultList();
+
+        return geraetetypen.isEmpty() ? null : geraetetypen.get(0);
     }
 
     public Geraet aktualisiereGeraet(Integer inventarNr, Integer serienNr, LocalDate kaufdatum, boolean istAusleihbar) {

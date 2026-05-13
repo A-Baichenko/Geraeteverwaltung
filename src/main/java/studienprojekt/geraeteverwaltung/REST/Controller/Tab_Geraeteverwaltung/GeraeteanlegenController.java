@@ -1,4 +1,4 @@
-package studienprojekt.geraeteverwaltung.REST.Controller;
+package studienprojekt.geraeteverwaltung.REST.Controller.Tab_Geraeteverwaltung;
 
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.http.HttpServletRequest;
@@ -18,6 +18,7 @@ import studienprojekt.geraeteverwaltung.REST.Service.JwtService;
 import studienprojekt.geraeteverwaltung.geraeteverwaltung.DBaccess.DBaccess_Geraeteverwaltung;
 import studienprojekt.geraeteverwaltung.geraeteverwaltung.DBaccess.entity.Geraet;
 import studienprojekt.geraeteverwaltung.geraeteverwaltung.DBaccess.entity.Geraetetyp;
+import studienprojekt.geraeteverwaltung.geraeteverwaltung.DBaccess.entity.Kategorie;
 import studienprojekt.geraeteverwaltung.mitarbeiterverwalten.DBaccess.DBaccess_AppUserverwaltung;
 import studienprojekt.geraeteverwaltung.mitarbeiterverwalten.DBaccess.DBaccess_Mitarbeiterverwaltung;
 import studienprojekt.geraeteverwaltung.mitarbeiterverwalten.DBaccess.entity.AppUser;
@@ -87,6 +88,60 @@ public class GeraeteanlegenController {
         ));
     }
 
+    @GetMapping("/categories")
+    public ResponseEntity<?> getCategories(HttpServletRequest request) {
+        if (authenticatedManagerOrAdmin(request) == null) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(Map.of("error", "Nur für Geräteverwalter oder Admin verfügbar"));
+        }
+
+        return ResponseEntity.ok(
+                dbaccessGeraeteverwaltung.getKategorien().stream()
+                        .map(kategorie -> Map.of(
+                                "id", kategorie.getId(),
+                                "bezeichnung", kategorie.getBezeichnung(),
+                                "label", kategorie.getBezeichnung()
+                        ))
+                        .toList()
+        );
+    }
+
+    @PostMapping("/categories")
+    public ResponseEntity<?> createCategory(
+            @RequestBody CreateCategoryRequest categoryRequest,
+            HttpServletRequest request) {
+
+        if (authenticatedManagerOrAdmin(request) == null) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(Map.of("error", "Nur für Geräteverwalter oder Admin verfügbar"));
+        }
+
+        try {
+            if (categoryRequest.bezeichnung() == null || categoryRequest.bezeichnung().isBlank()) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Kategorie-Bezeichnung ist erforderlich"));
+            }
+
+            String bezeichnung = categoryRequest.bezeichnung().trim();
+            if (dbaccessGeraeteverwaltung.sucheKategorieNachBezeichnung(bezeichnung) != null) {
+                return ResponseEntity.status(HttpStatus.CONFLICT)
+                        .body(Map.of("error", "Eine Kategorie mit dieser Bezeichnung existiert bereits"));
+            }
+
+            Kategorie gespeichert = dbaccessGeraeteverwaltung.legeKategorieAn(new Kategorie(bezeichnung));
+            return ResponseEntity.ok(Map.of(
+                    "message", "Kategorie wurde angelegt",
+                    "id", gespeichert.getId(),
+                    "bezeichnung", gespeichert.getBezeichnung(),
+                    "label", gespeichert.getBezeichnung()
+            ));
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().body(Map.of("error", ex.getMessage()));
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(Map.of("error", "Kategorie konnte nicht gespeichert werden."));
+        }
+    }
+
     @GetMapping("/device-types")
     public ResponseEntity<?> searchDeviceTypes(
             @RequestParam(required = false) String query,
@@ -110,6 +165,56 @@ public class GeraeteanlegenController {
                         ))
                         .toList()
         );
+    }
+
+    @PostMapping("/device-types")
+    public ResponseEntity<?> createDeviceType(
+            @RequestBody CreateDeviceTypeRequest typeRequest,
+            HttpServletRequest request) {
+
+        if (authenticatedManagerOrAdmin(request) == null) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(Map.of("error", "Nur für Geräteverwalter oder Admin verfügbar"));
+        }
+
+        try {
+            if (typeRequest.hersteller() == null || typeRequest.hersteller().isBlank()) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Hersteller ist erforderlich"));
+            }
+            if (typeRequest.bezeichnung() == null || typeRequest.bezeichnung().isBlank()) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Bezeichnung ist erforderlich"));
+            }
+            if (typeRequest.kategorieId() == null) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Kategorie ist erforderlich"));
+            }
+
+            Kategorie kategorie = dbaccessGeraeteverwaltung.sucheKategorieById(typeRequest.kategorieId());
+            if (kategorie == null) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Kategorie nicht gefunden"));
+            }
+
+            String hersteller = typeRequest.hersteller().trim();
+            String bezeichnung = typeRequest.bezeichnung().trim();
+            if (dbaccessGeraeteverwaltung.sucheGeraetetyp(hersteller, bezeichnung, kategorie.getId()) != null) {
+                return ResponseEntity.status(HttpStatus.CONFLICT)
+                        .body(Map.of("error", "Dieser Gerätetyp existiert in der Kategorie bereits"));
+            }
+
+            Geraetetyp gespeichert = dbaccessGeraeteverwaltung.legeGeraetetypAn(new Geraetetyp(hersteller, bezeichnung, kategorie));
+            return ResponseEntity.ok(Map.of(
+                    "message", "Gerätetyp wurde angelegt",
+                    "id", gespeichert.getId(),
+                    "label", gespeichert.getHersteller() + " " + gespeichert.getBezeichnung(),
+                    "hersteller", gespeichert.getHersteller(),
+                    "bezeichnung", gespeichert.getBezeichnung(),
+                    "kategorie", gespeichert.getKategorie().getBezeichnung()
+            ));
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().body(Map.of("error", ex.getMessage()));
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(Map.of("error", "Gerätetyp konnte nicht gespeichert werden."));
+        }
     }
 
     @GetMapping("/employees")
@@ -268,6 +373,16 @@ public class GeraeteanlegenController {
         }
 
         return user.getRole() == Role.GERAETE_VERWALTER || user.getRole() == Role.ADMIN ? user : null;
+    }
+
+    public record CreateCategoryRequest(String bezeichnung) {
+    }
+
+    public record CreateDeviceTypeRequest(
+            String hersteller,
+            String bezeichnung,
+            Long kategorieId
+    ) {
     }
 
     public record CreateDeviceRequest(
