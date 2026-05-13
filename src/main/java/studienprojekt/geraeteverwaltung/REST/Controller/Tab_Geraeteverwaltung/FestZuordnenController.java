@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -20,7 +21,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import studienprojekt.geraeteverwaltung.REST.Controller.htmlstrings.GeraeteverwaltungReservierungsantraegeHtml;
 import studienprojekt.geraeteverwaltung.REST.Service.JwtService;
+import studienprojekt.geraeteverwaltung.geraeteverwaltung.DBaccess.DBaccess_Geraeteverwaltung;
 import studienprojekt.geraeteverwaltung.geraeteverwaltung.DBaccess.entity.Geraet;
+import studienprojekt.geraeteverwaltung.geraeteverwaltung.DBaccess.entity.Geraetetyp;
 import studienprojekt.geraeteverwaltung.mitarbeiterverwalten.DBaccess.DBaccess_AppUserverwaltung;
 import studienprojekt.geraeteverwaltung.mitarbeiterverwalten.DBaccess.DBaccess_Mitarbeiterverwaltung;
 import studienprojekt.geraeteverwaltung.mitarbeiterverwalten.DBaccess.entity.AppUser;
@@ -38,6 +41,8 @@ public class FestZuordnenController {
     private final DBaccess_AppUserverwaltung dbaccessAppUserverwaltung;
     private final DBaccess_Mitarbeiterverwaltung dbaccessMitarbeiterverwaltung;
     private final DBaccess_Raumverwaltung dbaccessRaumverwaltung;
+    private final DBaccess_Geraeteverwaltung dbaccessGeraeteverwaltung;
+
 
     @PersistenceContext
     private EntityManager em;
@@ -46,11 +51,13 @@ public class FestZuordnenController {
             JwtService jwtService,
             DBaccess_AppUserverwaltung dbaccessAppUserverwaltung,
             DBaccess_Mitarbeiterverwaltung dbaccessMitarbeiterverwaltung,
-            DBaccess_Raumverwaltung dbaccessRaumverwaltung) {
+            DBaccess_Raumverwaltung dbaccessRaumverwaltung,
+            DBaccess_Geraeteverwaltung dbaccessGeraeteverwaltung) {
         this.jwtService = jwtService;
         this.dbaccessAppUserverwaltung = dbaccessAppUserverwaltung;
         this.dbaccessMitarbeiterverwaltung = dbaccessMitarbeiterverwaltung;
         this.dbaccessRaumverwaltung = dbaccessRaumverwaltung;
+        this.dbaccessGeraeteverwaltung = dbaccessGeraeteverwaltung;
     }
 
     @GetMapping("/view-config")
@@ -132,6 +139,76 @@ public class FestZuordnenController {
         return ResponseEntity.ok(response);
     }
 
+    @GetMapping("/device-types")
+    public ResponseEntity<?> searchDeviceTypes(
+            @RequestParam(required = false) String query,
+            HttpServletRequest request) {
+
+        if (authenticatedManagerOrAdmin(request) == null) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(Map.of("error", "Nur für Geräteverwalter oder Admin verfügbar"));
+        }
+
+        List<Geraetetyp> results = dbaccessGeraeteverwaltung.findeGeraetetypenNachFilter(query);
+
+        return ResponseEntity.ok(
+                results.stream()
+                        .map(typ -> Map.of(
+                                "id", typ.getId(),
+                                "label", typ.getHersteller() + " " + typ.getBezeichnung(),
+                                "hersteller", typ.getHersteller(),
+                                "bezeichnung", typ.getBezeichnung()
+                        ))
+                        .toList()
+        );
+    }
+
+    @GetMapping("/employees")
+    public ResponseEntity<?> searchEmployees(
+            @RequestParam(required = false) String query,
+            HttpServletRequest request) {
+
+        if (authenticatedManagerOrAdmin(request) == null) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(Map.of("error", "Nur für Geräteverwalter oder Admin verfügbar"));
+        }
+
+        List<Mitarbeiter> results = dbaccessMitarbeiterverwaltung.findeMitarbeiterNachFilter(query);
+
+        return ResponseEntity.ok(
+                results.stream()
+                        .map(mitarbeiter -> Map.of(
+                                "id", mitarbeiter.getPersonalNr(),
+                                "label", mitarbeiter.getAnrede().name() + " " + mitarbeiter.getVorname() + " " + mitarbeiter.getNachname(),
+                                "personalNr", mitarbeiter.getPersonalNr()
+                        ))
+                        .toList()
+        );
+    }
+
+    @GetMapping("/rooms")
+    public ResponseEntity<?> searchRooms(
+            @RequestParam(required = false) String query,
+            HttpServletRequest request) {
+
+        if (authenticatedManagerOrAdmin(request) == null) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(Map.of("error", "Nur für Geräteverwalter oder Admin verfügbar"));
+        }
+
+        List<Raum> results = dbaccessRaumverwaltung.findeRaeumeNachFilter(query);
+
+        return ResponseEntity.ok(
+                results.stream()
+                        .map(raum -> Map.of(
+                                "id", raum.getRaumNr(),
+                                "label", "Raum " + raum.getRaumNr() + " - " + raum.getGebaeude(),
+                                "raumNr", raum.getRaumNr()
+                        ))
+                        .toList()
+        );
+    }
+
     @GetMapping("/{inventarNr}")
     public ResponseEntity<?> getAssignment(
             @PathVariable Integer inventarNr,
@@ -155,12 +232,31 @@ public class FestZuordnenController {
                 geraet.getStaendigerNutzer() != null ? geraet.getStaendigerNutzer().getPersonalNr() : null
         );
         response.put(
+                "mitarbeiterLabel",
+                geraet.getStaendigerNutzer() != null
+                        ? geraet.getStaendigerNutzer().getVorname() + " " + geraet.getStaendigerNutzer().getNachname()
+                        : null
+        );
+        response.put(
                 "raumNr",
                 geraet.getStandort() != null ? geraet.getStandort().getRaumNr() : null
+        );
+        response.put(
+                "raumLabel",
+                geraet.getStandort() != null ? "Raum " + geraet.getStandort().getRaumNr() : null
         );
 
         return ResponseEntity.ok(response);
     }
+
+    @PostMapping
+    public ResponseEntity<?> saveAssignmentBySelection(
+            @RequestBody SaveFixedAssignmentRequest requestBody,
+            HttpServletRequest request) {
+
+        return saveAssignmentInternal(null, requestBody, request);
+    }
+
 
     @PutMapping("/{inventarNr}")
     public ResponseEntity<?> saveAssignment(
@@ -168,15 +264,40 @@ public class FestZuordnenController {
             @RequestBody SaveFixedAssignmentRequest requestBody,
             HttpServletRequest request) {
 
+        return saveAssignmentInternal(inventarNr, requestBody, request);
+    }
+
+    private ResponseEntity<?> saveAssignmentInternal(
+            Integer inventarNr,
+            SaveFixedAssignmentRequest requestBody,
+            HttpServletRequest request) {
+
         if (authenticatedManagerOrAdmin(request) == null) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(Map.of("error", "Nur für Geräteverwalter oder Admin verfügbar"));
         }
+        if (requestBody == null) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Anfrage ist leer"));
+        }
 
-        Geraet geraet = em.find(Geraet.class, inventarNr);
-        if (geraet == null) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(Map.of("error", "Gerät nicht gefunden"));
+        Geraet geraet;
+        if (inventarNr != null || requestBody.inventarNr() != null) {
+            Integer zielInventarNr = inventarNr != null ? inventarNr : requestBody.inventarNr();
+            geraet = em.find(Geraet.class, zielInventarNr);
+            if (geraet == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(Map.of("error", "Gerät nicht gefunden"));
+            }
+        } else if (requestBody.geraetetypId() != null) {
+            geraet = findeFreiesGeraetZumTyp(requestBody.geraetetypId());
+            if (geraet == null) {
+                return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(
+                        "error",
+                        "Für diesen Gerätetyp ist aktuell kein freies Gerät verfügbar"
+                ));
+            }
+        } else {
+            return ResponseEntity.badRequest().body(Map.of("error", "Gerät oder Gerätetyp ist erforderlich"));
         }
 
         Mitarbeiter mitarbeiter = null;
@@ -207,7 +328,10 @@ public class FestZuordnenController {
         geraet.setStandort(raum);
         geraet.aktualisiereStatusNachZuweisung();
 
-        return ResponseEntity.ok(Map.of("message", "Feste Zuordnung gespeichert"));
+        return ResponseEntity.ok(Map.of(
+                "message", "Feste Zuordnung gespeichert",
+                "inventarNr", geraet.getInventarNr()
+        ));
     }
 
     @DeleteMapping("/{inventarNr}")
@@ -231,6 +355,24 @@ public class FestZuordnenController {
         geraet.aktualisiereStatusNachZuweisung();
 
         return ResponseEntity.ok(Map.of("message", "Feste Zuordnung aufgehoben"));
+    }
+
+    private Geraet findeFreiesGeraetZumTyp(Long geraetetypId) {
+        List<Geraet> geraete = em.createQuery(
+                        "SELECT g FROM Geraet g " +
+                                "WHERE g.geraetetyp.id = :geraetetypId " +
+                                "AND g.staendigerNutzer IS NULL " +
+                                "AND g.standort IS NULL " +
+                                "AND g.istAusleihbar = true " +
+                                "ORDER BY g.inventarNr",
+                        Geraet.class)
+                .setParameter("geraetetypId", geraetetypId)
+                .getResultList();
+
+        return geraete.stream()
+                .filter(g -> istFuerFesteZuordnungVerfuegbar(g.getInventarNr()))
+                .findFirst()
+                .orElse(null);
     }
 
     private boolean istFuerFesteZuordnungVerfuegbar(Integer inventarNr) {
@@ -282,6 +424,7 @@ public class FestZuordnenController {
 
     public record SaveFixedAssignmentRequest(
             Integer inventarNr,
+            Long geraetetypId,
             Integer mitarbeiterPersonalNr,
             Integer raumNr
     ) {

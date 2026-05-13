@@ -233,27 +233,49 @@ public final class GeraeteverwaltungReservierungsantraegeHtml {
                 
                                               <div class="fz-fields">
                                                   <label class="fz-field">
-                                                      <span>Inv Nr:</span>
-                                                      <input id="fz-inventar-nr"
-                                                             name="inventarNr"
-                                                             type="number"
-                                                             placeholder="z. B. 1001">
+                                                    <span>Gerät:</span>
+                                                      <div class="fz-picker-field">
+                                                          <input id="fz-device-type"
+                                                                 name="deviceType"
+                                                                 type="text"
+                                                                 placeholder="Gerätetyp auswählen"
+                                                                 readonly>
+                                                          <button type="button"
+                                                                  class="fz-icon-button"
+                                                                  data-action="open-fixed-search"
+                                                                  data-search-target="deviceType"
+                                                                  aria-label="Gerätetyp auswählen">⌕</button>
+                                                      </div> 
                                                   </label>
                 
                                                   <label class="fz-field">
-                                                      <span>Mitarbeiter:</span>
-                                                      <input id="fz-mitarbeiter-nr"
-                                                             name="mitarbeiterNr"
-                                                             type="number"
-                                                             placeholder="Personal-Nr.">
+                                                    <div class="fz-picker-field">
+                                                          <input id="fz-employee"
+                                                                 name="employee"
+                                                                 type="text"
+                                                                 placeholder="Mitarbeiter auswählen"
+                                                                 readonly>
+                                                          <button type="button"
+                                                                  class="fz-icon-button"
+                                                                  data-action="open-fixed-search"
+                                                                  data-search-target="employee"
+                                                                  aria-label="Mitarbeiter auswählen">⌕</button>
+                                                    </div>
                                                   </label>
                 
                                                   <label class="fz-field">
-                                                      <span>Raum:</span>
-                                                      <input id="fz-raum-nr"
-                                                             name="raumNr"
-                                                             type="number"
-                                                             placeholder="Raum-Nr.">
+                                                      <div class="fz-picker-field">
+                                                          <input id="fz-room"
+                                                                 name="room"
+                                                                 type="text"
+                                                                 placeholder="Raum auswählen"
+                                                                 readonly>
+                                                          <button type="button"
+                                                                  class="fz-icon-button"
+                                                                  data-action="open-fixed-search"
+                                                                  data-search-target="room"
+                                                                  aria-label="Raum auswählen">⌕</button>
+                                                      </div>
                                                   </label>
                                               </div>
                 
@@ -266,6 +288,27 @@ public final class GeraeteverwaltungReservierungsantraegeHtml {
                                       </div>
                                   </div>
                               </section>
+                                <section id="fz-search-panel" class="fz-slide-panel">
+                                              <div class="fz-panel-header">
+                                                  <h3>Suche</h3>
+                                                  <button type="button"
+                                                          class="fz-icon-button"
+                                                          data-action="close-fixed-search">✕</button>
+                                              </div>
+
+                                              <p id="fz-search-title" class="fz-section-subtitle">Suche</p>
+
+                                              <div class="fz-search-box">
+                                                  <input id="fz-picker-search-input"
+                                                         name="fixedAssignmentPickerSearch"
+                                                         type="text"
+                                                         placeholder="Filter eingeben">
+                                              </div>
+
+                                              <ul id="fz-search-results" class="fz-list"></ul>
+                                              <p id="fz-search-error" class="fz-error-text"></p>
+                                              <p id="fz-search-placeholder" class="fz-placeholder">Noch keine Einträge vorhanden.</p>
+                                </section> 
 
                     <section class="al-accordion-section" data-section="lend">
                                   <button type="button" class="al-accordion-trigger" data-action="toggle-section" data-section-key="lend">

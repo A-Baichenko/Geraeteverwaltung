@@ -2,17 +2,22 @@ const fixedAssignmentState = {
     openSection: '',
     items: [],
     searchTerm: '',
+    currentSearchTarget: null,
+    searchResults: [],
+    searchError: null,
     loading: {
         list: false,
-        action: false
+        action: false,
+        search: false
     },
     message: null,
     success: false,
     editor: {
         isOpen: false,
         inventarNr: '',
-        mitarbeiterNr: '',
-        raumNr: ''
+        selectedDeviceType: null,
+        selectedEmployee: null,
+        selectedRoom: null
     }
 };
 
@@ -65,9 +70,39 @@ async function fetchFixedAssignmentById(token, inventarNr) {
     return data;
 }
 
+async function fetchFixedSearchResults(token, target, query = '') {
+    let endpoint = '';
+
+    if (target === 'deviceType') {
+        endpoint = `/api/geraeteverwaltung/fixed-assignments/device-types?query=${encodeURIComponent(query)}`;
+    } else if (target === 'employee') {
+        endpoint = `/api/geraeteverwaltung/fixed-assignments/employees?query=${encodeURIComponent(query)}`;
+    } else if (target === 'room') {
+        endpoint = `/api/geraeteverwaltung/fixed-assignments/rooms?query=${encodeURIComponent(query)}`;
+    } else {
+        return [];
+    }
+
+    const response = await fetch(endpoint, {
+        headers: authHeaders(token)
+    });
+
+    const data = await response.json().catch(() => ([]));
+    if (!response.ok) {
+        throw new Error(data.error || 'Suche fehlgeschlagen.');
+    }
+
+    return Array.isArray(data) ? data : [];
+}
+
 async function saveFixedAssignment(token, payload) {
-    const response = await fetch(`/api/geraeteverwaltung/fixed-assignments/${payload.inventarNr}`, {
-        method: 'PUT',
+    const hasInventory = payload.inventarNr != null;
+    const endpoint = hasInventory
+        ? `/api/geraeteverwaltung/fixed-assignments/${payload.inventarNr}`
+        : '/api/geraeteverwaltung/fixed-assignments';
+
+    const response = await fetch(endpoint, {
+        method: hasInventory ? 'PUT' : 'POST',
         headers: {
             'Content-Type': 'application/json',
             ...authHeaders(token)
@@ -127,8 +162,21 @@ function resetFixedEditor() {
     fixedAssignmentState.editor = {
         isOpen: false,
         inventarNr: '',
-        mitarbeiterNr: '',
-        raumNr: ''
+        selectedDeviceType: null,
+        selectedEmployee: null,
+        selectedRoom: null
+    };
+    fixedAssignmentState.currentSearchTarget = null;
+    fixedAssignmentState.searchResults = [];
+    fixedAssignmentState.searchError = null;
+}
+
+function createFixedPayload() {
+    return {
+        inventarNr: parseIntegerOrNull(fixedAssignmentState.editor.inventarNr),
+        geraetetypId: fixedAssignmentState.editor.selectedDeviceType?.id ?? null,
+        mitarbeiterPersonalNr: fixedAssignmentState.editor.selectedEmployee?.personalNr ?? fixedAssignmentState.editor.selectedEmployee?.id ?? null,
+        raumNr: fixedAssignmentState.editor.selectedRoom?.raumNr ?? fixedAssignmentState.editor.selectedRoom?.id ?? null
     };
 }
 
@@ -184,13 +232,83 @@ function renderFixedAssignmentsView(root) {
         panel.classList.toggle('is-open', fixedAssignmentState.editor.isOpen);
     }
 
-    const inventarInput = root.querySelector('#fz-inventar-nr');
-    const mitarbeiterInput = root.querySelector('#fz-mitarbeiter-nr');
-    const raumInput = root.querySelector('#fz-raum-nr');
+    const deviceInput = root.querySelector('#fz-device-type');
+    const employeeInput = root.querySelector('#fz-employee');
+    const roomInput = root.querySelector('#fz-room');
 
-    if (inventarInput) inventarInput.value = fixedAssignmentState.editor.inventarNr;
-    if (mitarbeiterInput) mitarbeiterInput.value = fixedAssignmentState.editor.mitarbeiterNr;
-    if (raumInput) raumInput.value = fixedAssignmentState.editor.raumNr;
+    if (deviceInput) {
+        deviceInput.value = fixedAssignmentState.editor.inventarNr
+            ? `Inventar #${fixedAssignmentState.editor.inventarNr}`
+            : fixedAssignmentState.editor.selectedDeviceType?.label || '';
+    }
+    if (employeeInput) {
+        employeeInput.value = fixedAssignmentState.editor.selectedEmployee?.label || '';
+    }
+    if (roomInput) {
+        roomInput.value = fixedAssignmentState.editor.selectedRoom?.label || '';
+    }
+
+    const searchPanel = root.querySelector('#fz-search-panel');
+    if (searchPanel) {
+        searchPanel.classList.toggle('is-open', !!fixedAssignmentState.currentSearchTarget);
+    }
+
+    const searchTitle = root.querySelector('#fz-search-title');
+    if (searchTitle) {
+        if (fixedAssignmentState.currentSearchTarget === 'deviceType') {
+            searchTitle.textContent = 'Gerätetyp auswählen';
+        } else if (fixedAssignmentState.currentSearchTarget === 'employee') {
+            searchTitle.textContent = 'Mitarbeiter auswählen';
+        } else if (fixedAssignmentState.currentSearchTarget === 'room') {
+            searchTitle.textContent = 'Raum auswählen';
+        } else {
+            searchTitle.textContent = 'Suche';
+        }
+    }
+
+    const searchErrorNode = root.querySelector('#fz-search-error');
+    if (searchErrorNode) {
+        searchErrorNode.textContent = fixedAssignmentState.searchError || '';
+        searchErrorNode.style.display = fixedAssignmentState.searchError ? 'block' : 'none';
+    }
+
+    const searchList = root.querySelector('#fz-search-results');
+    const searchPlaceholder = root.querySelector('#fz-search-placeholder');
+
+    if (searchList) {
+        if (fixedAssignmentState.loading.search) {
+            searchList.innerHTML = '<li class="fz-placeholder">Einträge werden geladen …</li>';
+        } else if (!fixedAssignmentState.searchResults.length) {
+            searchList.innerHTML = '';
+        } else {
+            searchList.innerHTML = fixedAssignmentState.searchResults.map((item) => `
+                <li class="fz-item">
+                    <button type="button"
+                            data-action="select-fixed-search-result"
+                            data-result-id="${item.id ?? ''}"
+                            data-result-label="${escapeHtml(item.label || '')}"
+                            data-personal-nr="${item.personalNr ?? ''}"
+                            data-raum-nr="${item.raumNr ?? ''}">
+                        ${escapeHtml(item.label || 'Ohne Bezeichnung')}
+                    </button>
+                </li>
+            `).join('');
+        }
+    }
+
+    if (searchPlaceholder) {
+        if (!fixedAssignmentState.currentSearchTarget) {
+            searchPlaceholder.textContent = 'Noch keine Einträge vorhanden.';
+            searchPlaceholder.style.display = fixedAssignmentState.searchResults.length === 0 ? 'block' : 'none';
+        } else if (fixedAssignmentState.loading.search) {
+            searchPlaceholder.style.display = 'none';
+        } else if (fixedAssignmentState.searchResults.length === 0) {
+            searchPlaceholder.textContent = 'Keine Ergebnisse gefunden.';
+            searchPlaceholder.style.display = 'block';
+        } else {
+            searchPlaceholder.style.display = 'none';
+        }
+    }
 }
 
 async function loadFixedAssignments(token, root) {
@@ -207,6 +325,22 @@ async function loadFixedAssignments(token, root) {
         fixedAssignmentState.success = false;
     } finally {
         fixedAssignmentState.loading.list = false;
+        renderFixedAssignmentsView(root);
+    }
+}
+
+async function loadFixedSearchList(token, root, target, query = '') {
+    fixedAssignmentState.loading.search = true;
+    fixedAssignmentState.searchError = null;
+    renderFixedAssignmentsView(root);
+
+    try {
+        fixedAssignmentState.searchResults = await fetchFixedSearchResults(token, target, query);
+    } catch (error) {
+        fixedAssignmentState.searchError = error.message;
+        fixedAssignmentState.searchResults = [];
+    } finally {
+        fixedAssignmentState.loading.search = false;
         renderFixedAssignmentsView(root);
     }
 }
@@ -297,12 +431,8 @@ export function registerFestZuordnenHandlers({ pageContent, getToken, redirectTo
             }
 
             if (action === 'open-fixed-editor') {
-                fixedAssignmentState.editor = {
-                    isOpen: true,
-                    inventarNr: '',
-                    mitarbeiterNr: '',
-                    raumNr: ''
-                };
+                resetFixedEditor();
+                fixedAssignmentState.editor.isOpen = true;
                 fixedAssignmentState.message = null;
                 fixedAssignmentState.success = false;
                 renderFixedAssignmentsView(root);
@@ -314,9 +444,17 @@ export function registerFestZuordnenHandlers({ pageContent, getToken, redirectTo
                 fixedAssignmentState.editor = {
                     isOpen: true,
                     inventarNr: String(item.inventarNr ?? ''),
-                    mitarbeiterNr: item.mitarbeiterPersonalNr != null ? String(item.mitarbeiterPersonalNr) : '',
-                    raumNr: item.raumNr != null ? String(item.raumNr) : ''
+                    selectedDeviceType: null,
+                    selectedEmployee: item.mitarbeiterPersonalNr != null
+                        ? { id: Number(item.mitarbeiterPersonalNr), personalNr: Number(item.mitarbeiterPersonalNr), label: item.mitarbeiterLabel || `Personal-Nr. ${item.mitarbeiterPersonalNr}` }
+                        : null,
+                    selectedRoom: item.raumNr != null
+                        ? { id: Number(item.raumNr), raumNr: Number(item.raumNr), label: item.raumLabel || `Raum ${item.raumNr}` }
+                        : null
                 };
+                fixedAssignmentState.currentSearchTarget = null;
+                fixedAssignmentState.searchResults = [];
+                fixedAssignmentState.searchError = null;
                 fixedAssignmentState.message = null;
                 fixedAssignmentState.success = false;
                 renderFixedAssignmentsView(root);
@@ -329,19 +467,80 @@ export function registerFestZuordnenHandlers({ pageContent, getToken, redirectTo
                 return;
             }
 
+            if (action === 'open-fixed-search') {
+                if (!fixedAssignmentState.editor.isOpen) {
+                    fixedAssignmentState.editor.isOpen = true;
+                }
+
+                fixedAssignmentState.currentSearchTarget = target.dataset.searchTarget;
+                fixedAssignmentState.searchResults = [];
+                fixedAssignmentState.searchError = null;
+                fixedAssignmentState.message = null;
+                fixedAssignmentState.success = false;
+                fixedAssignmentState.openSection = 'assignFixed';
+
+                const searchInput = root.querySelector('#fz-picker-search-input');
+                if (searchInput) {
+                    searchInput.value = '';
+                }
+
+                renderFixedAssignmentsView(root);
+                await loadFixedSearchList(token, root, fixedAssignmentState.currentSearchTarget, '');
+                return;
+            }
+
+            if (action === 'close-fixed-search') {
+                fixedAssignmentState.currentSearchTarget = null;
+                fixedAssignmentState.searchResults = [];
+                fixedAssignmentState.searchError = null;
+                renderFixedAssignmentsView(root);
+                return;
+            }
+
+            if (action === 'select-fixed-search-result') {
+                const selectedItem = {
+                    id: target.dataset.resultId ? Number(target.dataset.resultId) : null,
+                    label: target.dataset.resultLabel || '',
+                    personalNr: target.dataset.personalNr ? Number(target.dataset.personalNr) : null,
+                    raumNr: target.dataset.raumNr ? Number(target.dataset.raumNr) : null
+                };
+
+                if (fixedAssignmentState.currentSearchTarget === 'deviceType') {
+                    fixedAssignmentState.editor.inventarNr = '';
+                    fixedAssignmentState.editor.selectedDeviceType = selectedItem;
+                }
+
+                if (fixedAssignmentState.currentSearchTarget === 'employee') {
+                    fixedAssignmentState.editor.selectedEmployee = selectedItem;
+                }
+
+                if (fixedAssignmentState.currentSearchTarget === 'room') {
+                    fixedAssignmentState.editor.selectedRoom = selectedItem;
+                }
+
+                fixedAssignmentState.currentSearchTarget = null;
+                fixedAssignmentState.searchResults = [];
+                fixedAssignmentState.searchError = null;
+                renderFixedAssignmentsView(root);
+                return;
+            }
+
             if (action === 'save-fixed-assignment') {
                 if (fixedAssignmentState.loading.action) {
                     return;
                 }
 
-                const payload = {
-                    inventarNr: parseIntegerOrNull(root.querySelector('#fz-inventar-nr')?.value),
-                    mitarbeiterPersonalNr: parseIntegerOrNull(root.querySelector('#fz-mitarbeiter-nr')?.value),
-                    raumNr: parseIntegerOrNull(root.querySelector('#fz-raum-nr')?.value)
-                };
+                const payload = createFixedPayload();
 
-                if (payload.inventarNr == null) {
-                    fixedAssignmentState.message = 'Inventar-Nr. ist erforderlich.';
+                if (payload.inventarNr == null && payload.geraetetypId == null) {
+                    fixedAssignmentState.message = 'Bitte ein Gerät oder einen Gerätetyp auswählen.';
+                    fixedAssignmentState.success = false;
+                    renderFixedAssignmentsView(root);
+                    return;
+                }
+
+                if (payload.mitarbeiterPersonalNr == null && payload.raumNr == null) {
+                    fixedAssignmentState.message = 'Bitte Mitarbeiter oder Raum auswählen.';
                     fixedAssignmentState.success = false;
                     renderFixedAssignmentsView(root);
                     return;
@@ -360,9 +559,9 @@ export function registerFestZuordnenHandlers({ pageContent, getToken, redirectTo
             }
 
             if (action === 'clear-fixed-assignment') {
-                const inventarNr = parseIntegerOrNull(root.querySelector('#fz-inventar-nr')?.value);
+                const inventarNr = parseIntegerOrNull(fixedAssignmentState.editor.inventarNr);
                 if (inventarNr == null) {
-                    fixedAssignmentState.message = 'Inventar-Nr. ist erforderlich.';
+                    fixedAssignmentState.message = 'Zum Aufheben bitte eine bestehende feste Zuordnung aus der Liste auswählen.';
                     fixedAssignmentState.success = false;
                     renderFixedAssignmentsView(root);
                     return;
@@ -391,7 +590,7 @@ export function registerFestZuordnenHandlers({ pageContent, getToken, redirectTo
 
     pageContent.addEventListener('input', async (event) => {
         const target = event.target;
-        if (!target || target.id !== 'fz-search-input') {
+        if (!target || (target.id !== 'fz-search-input' && target.id !== 'fz-picker-search-input')) {
             return;
         }
 
@@ -405,10 +604,17 @@ export function registerFestZuordnenHandlers({ pageContent, getToken, redirectTo
             return;
         }
 
-        fixedAssignmentState.searchTerm = target.value || '';
+        if (target.id === 'fz-search-input') {
+            fixedAssignmentState.searchTerm = target.value || '';
 
-        if (fixedAssignmentState.openSection === 'assignFixed') {
-            await loadFixedAssignments(token, root);
+            if (fixedAssignmentState.openSection === 'assignFixed') {
+                await loadFixedAssignments(token, root);
+            }
+            return;
+        }
+
+        if (target.id === 'fz-picker-search-input' && fixedAssignmentState.currentSearchTarget) {
+            await loadFixedSearchList(token, root, fixedAssignmentState.currentSearchTarget, target.value || '');
         }
     });
 }
