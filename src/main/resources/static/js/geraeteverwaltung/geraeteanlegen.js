@@ -147,6 +147,10 @@ function escapeHtml(value) {
         .replaceAll("'", '&#39;');
 }
 
+function notifyDeviceDataChanged() {
+    window.dispatchEvent(new CustomEvent('geraeteverwaltung:device-data-changed'));
+}
+
 function parseIntegerOrNull(value) {
     if (value == null || String(value).trim() === '') {
         return null;
@@ -604,6 +608,7 @@ export function registerGeraeteanlegenHandlers({ pageContent, getToken, redirect
                     resetManagementForm(root);
                     createDeviceState.error = result.message || 'Gerätetyp wurde angelegt.';
                     createDeviceState.success = true;
+                    notifyDeviceDataChanged();
                 } else {
                     const result = await submitCreateCategory(token, payload);
                     resetManagementForm(root);
@@ -616,6 +621,7 @@ export function registerGeraeteanlegenHandlers({ pageContent, getToken, redirect
                         renderCreateDeviceView(root);
                         categorySelect.value = String(result.id);
                     }
+                    notifyDeviceDataChanged();
                 }
                 renderCreateDeviceView(root);
                 return;
@@ -678,6 +684,7 @@ export function registerGeraeteanlegenHandlers({ pageContent, getToken, redirect
                 resetCreateForm(root);
                 createDeviceState.error = result.message || 'Gerät wurde angelegt.';
                 createDeviceState.success = true;
+                notifyDeviceDataChanged();
                 renderCreateDeviceView(root);
                 return;
             }
