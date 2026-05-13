@@ -1,5 +1,5 @@
 const createDeviceState = {
-    openSection: '',
+    createDeviceModal: false,
     currentSearchTarget: null,
     selectedDeviceType: null,
     selectedEmployee: null,
@@ -135,7 +135,7 @@ function ensureCreateLayout(root) {
         return false;
     }
 
-    return !!root.querySelector('.ga-accordion-section[data-section="createDevices"]');
+    return !!root.querySelector('#ga-create-device-modal') && !!root.querySelector('#ga-create-management-modal');
 }
 
 function escapeHtml(value) {
@@ -279,9 +279,11 @@ function renderCreateDeviceView(root) {
         return;
     }
 
-    root.querySelectorAll('.ga-accordion-section').forEach((section) => {
-        section.classList.toggle('is-open', section.dataset.section === createDeviceState.openSection);
-    });
+    const createModal = root.querySelector('#ga-create-device-modal');
+    if (createModal) {
+        createModal.classList.toggle('is-open', createDeviceState.createDeviceModal);
+        createModal.setAttribute('aria-hidden', createDeviceState.createDeviceModal ? 'false' : 'true');
+    }
 
     const errorNode = root.querySelector('#ga-create-device-error');
     if (errorNode) {
@@ -465,7 +467,7 @@ async function initializeCreateDevicesFlow(token, getState, pageContent) {
         createDeviceState.success = false;
     }
 
-    createDeviceState.openSection = '';
+    createDeviceState.createDeviceModal = false;
     renderCreateDeviceView(root);
     root.dataset.createDevicesInitialized = 'true';
 
@@ -515,9 +517,22 @@ export function registerGeraeteanlegenHandlers({ pageContent, getToken, redirect
         const action = target.dataset.action;
 
         try {
-            if (action === 'toggle-section' && target.dataset.sectionKey === 'createDevices') {
-                createDeviceState.openSection =
-                    createDeviceState.openSection === 'createDevices' ? '' : 'createDevices';
+            if (action === 'open-create-device-modal') {
+                createDeviceState.createDeviceModal = true;
+                createDeviceState.currentSearchTarget = null;
+                createDeviceState.searchResults = [];
+                createDeviceState.searchError = null;
+                createDeviceState.error = null;
+                createDeviceState.success = false;
+                renderCreateDeviceView(root);
+                return;
+            }
+
+            if (action === 'close-create-device-modal') {
+                createDeviceState.createDeviceModal = false;
+                createDeviceState.currentSearchTarget = null;
+                createDeviceState.searchResults = [];
+                createDeviceState.searchError = null;
                 renderCreateDeviceView(root);
                 return;
             }
@@ -528,7 +543,7 @@ export function registerGeraeteanlegenHandlers({ pageContent, getToken, redirect
                 createDeviceState.searchError = null;
                 createDeviceState.error = null;
                 createDeviceState.success = false;
-                createDeviceState.openSection = 'createDevices';
+                createDeviceState.createDeviceModal = true;
 
                 const searchInput = root.querySelector('#ga-create-search-input');
                 if (searchInput) {

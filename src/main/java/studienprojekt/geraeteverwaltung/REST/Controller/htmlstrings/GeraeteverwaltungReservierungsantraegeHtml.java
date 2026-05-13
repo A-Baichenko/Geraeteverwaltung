@@ -8,16 +8,19 @@ public final class GeraeteverwaltungReservierungsantraegeHtml {
     public static String content() {
         return """
                 <div class="gv-accordion-layout">
-                    <section class="ga-accordion-section" data-section="createDevices">
-                        <button type="button" class="ga-accordion-trigger" data-action="toggle-section" data-section-key="createDevices">
-                            <span>Geräteanlegen</span><span class="ga-chevron">▾</span>
-                        </button>
-                        <div class="ga-accordion-content">
+                    <div id="ga-create-device-modal" class="ga-device-modal" aria-hidden="true">
+                        <div class="ga-device-modal-card ga-create-device-modal-card" role="dialog" aria-modal="true" aria-labelledby="ga-create-device-modal-title">
+                            <div class="ga-panel-header">
+                                <div>
+                                    <h3 id="ga-create-device-modal-title">Gerät anlegen</h3>
+                                    <p class="ga-section-subtitle">Neues Gerät mit Gerätetyp, Status und optionalem Standort erfassen.</p>
+                                </div>
+                                <button type="button" class="ga-icon-button" data-action="close-create-device-modal" aria-label="Popup schließen">✕</button>
+                            </div>
                             <p id="ga-create-device-error" class="ga-error-text"></p>
 
                             <div class="ga-grid">
                                 <section>
-                                    <h3>Geräte anlegen</h3>
 
                                     <div class="ga-fields">
                                         <label class="ga-field">
@@ -122,15 +125,7 @@ public final class GeraeteverwaltungReservierungsantraegeHtml {
                                                 name="createSearch"
                                                 type="text"
                                                 placeholder="Filter für Gerätetypen, Mitarbeiter oder Räume eingeben">
-                                        </div>
-                                        <div class="ga-type-actions">
-                                            <button type="button"
-                                                class="ga-management-button"
-                                                data-action="open-create-device-type-modal">Gerätetyp anlegen</button>
-                                            <button type="button"
-                                                class="ga-management-button ga-secondary-button"
-                                                data-action="open-create-category-modal">Kategorie anlegen</button>
-                                        </div>
+                                        </div> 
                                     </div>
 
                                     <ul id="ga-create-search-results" class="ga-list"></ul>
@@ -139,8 +134,8 @@ public final class GeraeteverwaltungReservierungsantraegeHtml {
                                 </section>
                             </div>
                         </div>
-                    </section>
-                       <div id="ga-create-management-modal" class="ga-device-modal" aria-hidden="true">
+                    </div>
+                        <div id="ga-create-management-modal" class="ga-device-modal" aria-hidden="true">
                         <div class="ga-device-modal-card ga-management-modal-card" role="dialog" aria-modal="true" aria-labelledby="ga-management-modal-title">
                             <div class="ga-panel-header">
                                 <div>
@@ -417,6 +412,11 @@ public final class GeraeteverwaltungReservierungsantraegeHtml {
                                                                 <option value="wartung_defekt">In Wartung / Defekt</option>
                                                             </select>
                                                         </label>
+                                                        <div class="dm-toolbar-actions" aria-label="Anlegefunktionen">
+                                                                                                                    <button type="button" class="ga-management-button" data-action="open-create-category-modal">Kategorie anlegen</button>
+                                                                                                                    <button type="button" class="ga-management-button" data-action="open-create-device-type-modal">Gerätetyp anlegen</button>
+                                                                                                                    <button type="button" class="ga-management-button" data-action="open-create-device-modal">Gerät anlegen</button>
+                                                                                                                </div>
                                                     </div>
                                                     <div id="dm-tree" class="dm-tree"></div>
                                                 </div>

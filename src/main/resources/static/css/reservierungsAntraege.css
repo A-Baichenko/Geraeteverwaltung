@@ -254,3 +254,23 @@
 .dm-status {
     font-weight: 600;
 }
+
+.dm-toolbar-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: flex-end;
+    margin-left: auto;
+}
+
+@media (max-width: 900px) {
+    .dm-toolbar-actions {
+        width: 100%;
+        margin-left: 0;
+    }
+
+    .dm-toolbar-actions .ga-management-button {
+        flex: 1;
+        min-width: 0;
+    }
+}
