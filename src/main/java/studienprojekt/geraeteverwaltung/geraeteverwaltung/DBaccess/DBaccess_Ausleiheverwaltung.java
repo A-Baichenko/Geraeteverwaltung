@@ -113,8 +113,9 @@ public class DBaccess_Ausleiheverwaltung {
 
         Long blockierendeAusleihen = em.createQuery(
                         "SELECT COUNT(a) FROM Ausleihe a WHERE a.geraet.inventarNr = :inventarNr " +
+                                "AND a.tatsaechlichesRueckgabedatum IS NULL " +
                                 "AND a.ausleihdatum <= :bis " +
-                                "AND COALESCE(a.tatsaechlichesRueckgabedatum, a.vereinbartesRueckgabedatum) >= :von", Long.class)
+                                "AND a.vereinbartesRueckgabedatum >= :von", Long.class)
                 .setParameter("inventarNr", wirksameInventarNr)
                 .setParameter("von", ausleihdatum)
                 .setParameter("bis", rueckgabedatum)
@@ -152,8 +153,9 @@ public class DBaccess_Ausleiheverwaltung {
         LocalDate referenzTag = tag != null ? tag : LocalDate.now();
         return em.createQuery(
                         "SELECT DISTINCT a.geraet.inventarNr FROM Ausleihe a " +
-                                "WHERE a.ausleihdatum <= :tag " +
-                                "AND COALESCE(a.tatsaechlichesRueckgabedatum, a.vereinbartesRueckgabedatum) >= :tag",
+                                "WHERE a.tatsaechlichesRueckgabedatum IS NULL " +
+                                "AND a.ausleihdatum <= :tag " +
+                                "AND a.vereinbartesRueckgabedatum >= :tag",
                         Integer.class)
                 .setParameter("tag", referenzTag)
                 .getResultList();
@@ -166,8 +168,9 @@ public class DBaccess_Ausleiheverwaltung {
                         "SELECT a FROM Ausleihe a " +
                                 "JOIN FETCH a.geraet g " +
                                 "JOIN FETCH a.mitarbeiter m " +
-                                "WHERE a.ausleihdatum <= :tag " +
-                                "AND COALESCE(a.tatsaechlichesRueckgabedatum, a.vereinbartesRueckgabedatum) >= :tag " +
+                                "WHERE a.tatsaechlichesRueckgabedatum IS NULL " +
+                                "AND a.ausleihdatum <= :tag " +
+                                "AND a.vereinbartesRueckgabedatum >= :tag " +
                                 "ORDER BY a.ausleihdatum DESC, a.ausleiheNr DESC",
                         Ausleihe.class)
                 .setParameter("tag", referenzTag)
@@ -197,8 +200,9 @@ public class DBaccess_Ausleiheverwaltung {
         for (Geraet geraet : kandidaten) {
             Long blockierendeAusleihen = em.createQuery(
                             "SELECT COUNT(a) FROM Ausleihe a WHERE a.geraet.inventarNr = :inventarNr " +
+                                    "AND a.tatsaechlichesRueckgabedatum IS NULL " +
                                     "AND a.ausleihdatum <= :bis " +
-                                    "AND COALESCE(a.tatsaechlichesRueckgabedatum, a.vereinbartesRueckgabedatum) >= :von", Long.class)
+                                    "AND a.vereinbartesRueckgabedatum >= :von", Long.class)
                     .setParameter("inventarNr", geraet.getInventarNr())
                     .setParameter("von", von)
                     .setParameter("bis", bis)
