@@ -70,6 +70,10 @@ public final class ReservierungHtml {
 
                     <section class="card reservation-column">
                         <h3>Eigene Reservierungen</h3>
+                        <div class="reservation-filter" aria-label="Reservierungen filtern">
+                            <button type="button" class="filter-button active-filter" data-reservierungsfilter="AKTIV">Aktive</button>
+                            <button type="button" class="filter-button" data-reservierungsfilter="ABGESCHLOSSEN">Abgeschlossen</button>
+                        </div> 
                         <ul id="meine-reservierungen-liste" class="selection-list"></ul>
                     </section>
                 </div>

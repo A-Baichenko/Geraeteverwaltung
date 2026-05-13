@@ -72,6 +72,9 @@ class DBaccessReservierungsAusleiheTests {
         assertEquals(LocalDate.of(2026, 4, 18), zurueckgegeben.getTatsaechlichesRueckgabedatum());
         assertEquals(GeraetStatus.VERFUEGBAR, zurueckgegeben.getGeraet().getStatus());
         assertTrue(ausleiheDb.findeAktivAusgelieheneInventarnummern(LocalDate.of(2026, 4, 18)).isEmpty());
+        assertTrue(reservierungsDb.findeReservierungsstatusFuerMitarbeiter(m.getPersonalNr()).stream()
+                .anyMatch(status -> status.reservierung().getReservierungsNr().equals(reservierung.getReservierungsNr())
+                        && !status.istAktiv()));
 
         Map<Integer, String> aktiveAusleiher = ausleiheDb.findeAktiveAusleiherJeInventar(LocalDate.of(2026, 4, 18));
         assertFalse(aktiveAusleiher.containsKey(g.getInventarNr()));

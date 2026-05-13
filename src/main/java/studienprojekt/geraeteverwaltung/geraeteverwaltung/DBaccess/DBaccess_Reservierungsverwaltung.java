@@ -131,12 +131,29 @@ public class DBaccess_Reservierungsverwaltung {
         return em.find(Reservierung.class, reservierungsNr);
     }
 
-    public List<Reservierung> findeReservierungenFuerMitarbeiter(Integer personalNr) {
+    public List<Reservierungsstatus> findeReservierungsstatusFuerMitarbeiter(Integer personalNr) {
         return em.createQuery(
-                        "SELECT r FROM Reservierung r JOIN FETCH r.geraetetyp WHERE r.mitarbeiter.personalNr = :personalNr ORDER BY r.ausleihdatum DESC",
-                        Reservierung.class)
+                        "SELECT r, a.ausleiheNr, a.tatsaechlichesRueckgabedatum " +
+                                "FROM Reservierung r " +
+                                "JOIN FETCH r.geraetetyp " +
+                                "LEFT JOIN Ausleihe a ON a.reservierung = r " +
+                                "WHERE r.mitarbeiter.personalNr = :personalNr " +
+                                "ORDER BY r.ausleihdatum DESC",
+                        Object[].class)
                 .setParameter("personalNr", personalNr)
-                .getResultList();
+                .getResultStream()
+                .map(ergebnis -> new Reservierungsstatus(
+                        (Reservierung) ergebnis[0],
+                        (Integer) ergebnis[1],
+                        (LocalDate) ergebnis[2]
+                ))
+                .toList();
+    }
+
+    public List<Reservierung> findeReservierungenFuerMitarbeiter(Integer personalNr) {
+        return findeReservierungsstatusFuerMitarbeiter(personalNr).stream()
+                .map(Reservierungsstatus::reservierung)
+                .toList();
     }
 
     public List<Reservierung> findeOffeneReservierungen() {
@@ -373,14 +390,10 @@ public class DBaccess_Reservierungsverwaltung {
 
     public int loescheAbgeschlosseneAlteReservierungen(LocalDate stichtag) {
         LocalDate wirksamerStichtag = stichtag != null ? stichtag : LocalDate.now();
-        em.createQuery(
-                        "UPDATE Ausleihe a SET a.reservierung = NULL " +
-                                "WHERE a.reservierung.rueckgabedatum < :stichtag")
-                .setParameter("stichtag", wirksamerStichtag)
-                .executeUpdate();
         return em.createQuery(
-                        "DELETE FROM Reservierung r WHERE r.rueckgabedatum < :stichtag")
-                .setParameter("stichtag", wirksamerStichtag)
+                        "DELETE FROM Reservierung r " +
+                                "WHERE r.rueckgabedatum < :stichtag " +
+                                "AND NOT EXISTS (SELECT a.ausleiheNr FROM Ausleihe a WHERE a.reservierung = r)")
                 .executeUpdate();
     }
 
@@ -405,5 +418,10 @@ public class DBaccess_Reservierungsverwaltung {
     }
 
     public record Zeitraum(LocalDate start, LocalDate ende) {
+    }
+    public record Reservierungsstatus(Reservierung reservierung, Integer ausleiheNr, LocalDate tatsaechlichesRueckgabedatum) {
+        public boolean istAktiv() {
+            return ausleiheNr == null || tatsaechlichesRueckgabedatum == null;
+        }
     }
 }

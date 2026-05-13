@@ -4,6 +4,7 @@ import io.jsonwebtoken.Claims;
 import jakarta.servlet.http.HttpServletRequest;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -63,16 +64,21 @@ public class ReservierungController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Nicht autorisiert"));
         }
 
-        var reservierungen = dbaccessReservierungsverwaltung.findeReservierungenFuerMitarbeiter(user.getMitarbeiter().getPersonalNr());
+        var reservierungen = dbaccessReservierungsverwaltung.findeReservierungsstatusFuerMitarbeiter(user.getMitarbeiter().getPersonalNr());
         return ResponseEntity.ok(
                 reservierungen.stream()
-                        .map(reservierung -> Map.of(
-                                "reservierungsNr", reservierung.getReservierungsNr(),
-                                "ausleihdatum", reservierung.getAusleihdatum(),
-                                "rueckgabedatum", reservierung.getRueckgabedatum(),
-                                "geraetetypId", reservierung.getGeraetetyp().getId(),
-                                "geraetetypName", reservierung.getGeraetetyp().getHersteller() + " " + reservierung.getGeraetetyp().getBezeichnung()
-                        ))
+                        .map(eintrag -> {
+                            Reservierung reservierung = eintrag.reservierung();
+                            Map<String, Object> response = new LinkedHashMap<>();
+                            response.put("reservierungsNr", reservierung.getReservierungsNr());
+                            response.put("ausleihdatum", reservierung.getAusleihdatum());
+                            response.put("rueckgabedatum", reservierung.getRueckgabedatum());
+                            response.put("geraetetypId", reservierung.getGeraetetyp().getId());
+                            response.put("geraetetypName", reservierung.getGeraetetyp().getHersteller() + " " + reservierung.getGeraetetyp().getBezeichnung());
+                            response.put("status", eintrag.istAktiv() ? "AKTIV" : "ABGESCHLOSSEN");
+                            response.put("tatsaechlichesRueckgabedatum", eintrag.tatsaechlichesRueckgabedatum());
+                            return response;
+                        })
                         .toList()
         );
     }
