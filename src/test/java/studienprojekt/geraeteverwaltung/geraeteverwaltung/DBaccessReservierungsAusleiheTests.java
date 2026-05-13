@@ -13,6 +13,7 @@ import studienprojekt.geraeteverwaltung.mitarbeiterverwalten.DBaccess.entity.Anr
 import studienprojekt.geraeteverwaltung.mitarbeiterverwalten.DBaccess.entity.Mitarbeiter;
 
 import java.time.LocalDate;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -70,6 +71,19 @@ class DBaccessReservierungsAusleiheTests {
 
         assertEquals(LocalDate.of(2026, 4, 18), zurueckgegeben.getTatsaechlichesRueckgabedatum());
         assertEquals(GeraetStatus.VERFUEGBAR, zurueckgegeben.getGeraet().getStatus());
+        assertTrue(ausleiheDb.findeAktivAusgelieheneInventarnummern(LocalDate.of(2026, 4, 18)).isEmpty());
+
+        Map<Integer, String> aktiveAusleiher = ausleiheDb.findeAktiveAusleiherJeInventar(LocalDate.of(2026, 4, 18));
+        assertFalse(aktiveAusleiher.containsKey(g.getInventarNr()));
+
+        Ausleihe neueAusleihe = ausleiheDb.leiheGeraetAus(
+                t.getId(),
+                m.getPersonalNr(),
+                LocalDate.of(2026, 4, 18),
+                LocalDate.of(2026, 4, 19)
+        );
+        assertNotNull(neueAusleihe.getAusleiheNr());
+        assertEquals(g.getInventarNr(), neueAusleihe.getGeraet().getInventarNr());
     }
 
     @Test

@@ -236,8 +236,9 @@ public class FestZuordnenController {
     private boolean istFuerFesteZuordnungVerfuegbar(Integer inventarNr) {
         Long aktiveAusleihen = em.createQuery(
                         "SELECT COUNT(a) FROM Ausleihe a WHERE a.geraet.inventarNr = :inventarNr " +
+                                "AND a.tatsaechlichesRueckgabedatum IS NULL " +
                                 "AND a.ausleihdatum <= CURRENT_DATE " +
-                                "AND COALESCE(a.tatsaechlichesRueckgabedatum, a.vereinbartesRueckgabedatum) >= CURRENT_DATE",
+                                "AND a.vereinbartesRueckgabedatum >= CURRENT_DATE",
                         Long.class)
                 .setParameter("inventarNr", inventarNr)
                 .getSingleResult();

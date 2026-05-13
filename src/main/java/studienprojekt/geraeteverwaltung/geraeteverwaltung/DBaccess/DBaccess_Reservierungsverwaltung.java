@@ -175,8 +175,9 @@ public class DBaccess_Reservierungsverwaltung {
                                 "AND NOT EXISTS (" +
                                 "SELECT a.ausleiheNr FROM Ausleihe a " +
                                 "WHERE a.geraet = g " +
+                                "AND a.tatsaechlichesRueckgabedatum IS NULL " +
                                 "AND a.ausleihdatum <= :rueckgabe " +
-                                "AND COALESCE(a.tatsaechlichesRueckgabedatum, a.vereinbartesRueckgabedatum) >= :ausleihe" +
+                                "AND a.vereinbartesRueckgabedatum >= :ausleihe" +
                                 ") " +
                                 "ORDER BY g.inventarNr ASC",
                         Geraet.class)
@@ -280,8 +281,9 @@ public class DBaccess_Reservierungsverwaltung {
     private boolean istGeraetImZeitraumFrei(Integer inventarNr, LocalDate von, LocalDate bis, Integer exklusiveReservierungId) {
         Long blockierendeAusleihen = em.createQuery(
                         "SELECT COUNT(a) FROM Ausleihe a WHERE a.geraet.inventarNr = :inventarNr " +
+                                "AND a.tatsaechlichesRueckgabedatum IS NULL " +
                                 "AND a.ausleihdatum <= :bis " +
-                                "AND COALESCE(a.tatsaechlichesRueckgabedatum, a.vereinbartesRueckgabedatum) >= :von",
+                                "AND a.vereinbartesRueckgabedatum >= :von",
                         Long.class)
                 .setParameter("inventarNr", inventarNr)
                 .setParameter("von", von)
@@ -329,8 +331,9 @@ public class DBaccess_Reservierungsverwaltung {
 
         Long aktiveAusleihen = em.createQuery(
                         "SELECT COUNT(a) FROM Ausleihe a WHERE a.geraet.geraetetyp.id = :typId " +
+                                "AND a.tatsaechlichesRueckgabedatum IS NULL " +
                                 "AND a.ausleihdatum <= :bis " +
-                                "AND COALESCE(a.tatsaechlichesRueckgabedatum, a.vereinbartesRueckgabedatum) >= :von", Long.class)
+                                "AND a.vereinbartesRueckgabedatum >= :von", Long.class)
                 .setParameter("typId", geraetetypId)
                 .setParameter("von", von)
                 .setParameter("bis", bis)
@@ -360,8 +363,9 @@ public class DBaccess_Reservierungsverwaltung {
                                 "AND a.geraet.istAusleihbar = true " +
                                 "AND a.geraet.staendigerNutzer IS NULL " +
                                 "AND a.geraet.standort IS NULL " +
+                                "AND a.tatsaechlichesRueckgabedatum IS NULL " +
                                 "AND a.ausleihdatum <= :tag " +
-                                "AND COALESCE(a.tatsaechlichesRueckgabedatum, a.vereinbartesRueckgabedatum) >= :tag", Long.class)
+                                "AND a.vereinbartesRueckgabedatum >= :tag", Long.class)
                 .setParameter("typId", geraetetypId)
                 .setParameter("tag", tag)
                 .getSingleResult();
