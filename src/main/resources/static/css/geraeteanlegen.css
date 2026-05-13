@@ -366,3 +366,7 @@
         min-width: 0;
     }
 }
+
+.ga-create-device-modal-card {
+    width: min(980px, 100%);
+}
