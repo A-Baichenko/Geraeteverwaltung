@@ -33,7 +33,36 @@ public class AppUser {
     @JoinColumn(name = "personal_nr", nullable = false, unique = true)
     private Mitarbeiter mitarbeiter;
 
-    protected AppUser() {
+    public AppUser() {
+    }
+
+    public AppUser(
+            String username,
+            String password,
+            Role role,
+            Mitarbeiter mitarbeiter
+    ) {
+
+        if (username == null || username.isBlank()) {
+            throw new IllegalArgumentException("username darf nicht leer sein");
+        }
+
+        if (password == null || password.isBlank()) {
+            throw new IllegalArgumentException("password darf nicht leer sein");
+        }
+
+        if (role == null) {
+            throw new IllegalArgumentException("role darf nicht null sein");
+        }
+
+        if (mitarbeiter == null) {
+            throw new IllegalArgumentException("mitarbeiter darf nicht null sein");
+        }
+
+        this.username = username;
+        this.password = password;
+        this.role = role;
+        this.mitarbeiter = mitarbeiter;
     }
 
     public Long getId() {
@@ -54,5 +83,41 @@ public class AppUser {
 
     public Mitarbeiter getMitarbeiter() {
         return mitarbeiter;
+    }
+
+    public void setUsername(String username) {
+
+        if (username == null || username.isBlank()) {
+            throw new IllegalArgumentException("username darf nicht leer sein");
+        }
+
+        this.username = username;
+    }
+
+    public void setPassword(String password) {
+
+        if (password == null || password.isBlank()) {
+            throw new IllegalArgumentException("password darf nicht leer sein");
+        }
+
+        this.password = password;
+    }
+
+    public void setRole(Role role) {
+
+        if (role == null) {
+            throw new IllegalArgumentException("role darf nicht null sein");
+        }
+
+        this.role = role;
+    }
+
+    public void setMitarbeiter(Mitarbeiter mitarbeiter) {
+
+        if (mitarbeiter == null) {
+            throw new IllegalArgumentException("mitarbeiter darf nicht null sein");
+        }
+
+        this.mitarbeiter = mitarbeiter;
     }
 }

@@ -16,13 +16,15 @@ public class Raum {
     @Column(nullable = false, length = 100)
     private String gebaeude;
 
-    protected Raum() {
+    public Raum() {
     }
 
     public Raum(Integer raumNr, String gebaeude) {
+
         if (raumNr == null || raumNr <= 0) {
             throw new IllegalArgumentException("raumNr muss > 0 sein");
         }
+
         if (gebaeude == null || gebaeude.isBlank()) {
             throw new IllegalArgumentException("gebaeude darf nicht leer sein");
         }
@@ -39,7 +41,26 @@ public class Raum {
         return gebaeude;
     }
 
+    public void setRaumNr(Integer raumNr) {
+
+        if (raumNr == null || raumNr <= 0) {
+            throw new IllegalArgumentException("raumNr muss > 0 sein");
+        }
+
+        this.raumNr = raumNr;
+    }
+
+    public void setGebaeude(String gebaeude) {
+
+        if (gebaeude == null || gebaeude.isBlank()) {
+            throw new IllegalArgumentException("gebaeude darf nicht leer sein");
+        }
+
+        this.gebaeude = gebaeude;
+    }
+
     public void aendere(String gebaeude) {
+
         if (gebaeude == null || gebaeude.isBlank()) {
             throw new IllegalArgumentException("gebaeude darf nicht leer sein");
         }

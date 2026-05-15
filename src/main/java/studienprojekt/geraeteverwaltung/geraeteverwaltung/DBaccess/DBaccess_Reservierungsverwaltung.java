@@ -394,6 +394,7 @@ public class DBaccess_Reservierungsverwaltung {
                         "DELETE FROM Reservierung r " +
                                 "WHERE r.rueckgabedatum < :stichtag " +
                                 "AND NOT EXISTS (SELECT a.ausleiheNr FROM Ausleihe a WHERE a.reservierung = r)")
+                .setParameter("stichtag", wirksamerStichtag)
                 .executeUpdate();
     }
 
