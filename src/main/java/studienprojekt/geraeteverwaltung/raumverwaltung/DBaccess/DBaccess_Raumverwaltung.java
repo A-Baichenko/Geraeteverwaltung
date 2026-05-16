@@ -78,9 +78,8 @@ public class DBaccess_Raumverwaltung {
             return false;
         }
 
-        Long verwendungen = entityManager.createQuery(
-                        "SELECT COUNT(r) FROM Raum r WHERE r = :raum AND " +
-                                "EXISTS (SELECT g.inventarNr FROM Geraet g WHERE g.standort = r)",
+        long verwendungen = entityManager.createQuery(
+                        "SELECT COUNT(g) FROM Geraet g WHERE g.standort = :raum",
                         Long.class)
                 .setParameter("raum", gefunden)
                 .getSingleResult();
