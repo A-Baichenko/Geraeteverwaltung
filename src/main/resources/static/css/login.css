@@ -1,0 +1,97 @@
+:root {
+    font-family: Arial, sans-serif;
+    color: #1f2937;
+    background: #f3f4f6;
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+}
+
+.card {
+    width: min(420px, 100%);
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+    padding: 1.5rem;
+}
+
+h1 {
+    margin-top: 0;
+    margin-bottom: 1rem;
+}
+
+.field {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 0.75rem;
+}
+
+label {
+    font-weight: 600;
+    margin-bottom: 0.35rem;
+}
+
+input {
+    padding: 0.55rem 0.65rem;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 0.95rem;
+}
+
+button {
+    width: 100%;
+    margin-top: 0.5rem;
+    border: 0;
+    border-radius: 8px;
+    background: #2563eb;
+    color: white;
+    padding: 0.65rem;
+    font-size: 0.95rem;
+    cursor: pointer;
+}
+
+button:hover {
+    background: #1d4ed8;
+}
+
+#logoutBtn {
+    background: #ef4444;
+    display: none;
+}
+
+#logoutBtn:hover {
+    background: #dc2626;
+}
+
+.status {
+    margin-top: 1rem;
+    min-height: 1.5rem;
+    font-weight: 600;
+}
+
+.error {
+    color: #b91c1c;
+}
+
+.success {
+    color: #065f46;
+}
+
+.profile {
+    margin-top: 1rem;
+    padding: 0.8rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    background: #f9fafb;
+    display: none;
+}
+
+.profile p {
+    margin: 0.3rem 0;
+}

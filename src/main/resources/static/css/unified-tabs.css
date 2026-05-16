@@ -1,0 +1,235 @@
+/* Einheitliches Tab-Design angelehnt an Raum- und Mitarbeiterverwaltung. */
+:root {
+    --app-border-color: #111827;
+    --app-panel-background: #ffffff;
+    --app-muted-background: #f3f4f6;
+    --app-active-background: #e5e7eb;
+    --app-border-width: 2px;
+    --app-radius: 8px;
+    --app-control-radius: 6px;
+    --app-control-padding: 0.45rem 0.55rem;
+    --app-button-padding: 0.4rem 0.8rem;
+}
+
+.card,
+.management-panel,
+.hm-column,
+.hm-item,
+.reservation-column,
+.reservation-item,
+.list-item-button,
+.ga-accordion-section,
+.gv-accordion-section,
+.al-accordion-section,
+.ao-accordion-section,
+.fz-accordion-section,
+.ga-slide-panel,
+.gv-slide-panel,
+.al-slide-panel,
+.fz-slide-panel,
+.ga-device-modal-card,
+.gv-device-modal-card,
+.ga-item button,
+.gv-item button,
+.al-item button,
+.fz-item button,
+.ga-device-list button,
+.gv-device-list button,
+.ao-item,
+.dm-level,
+.dm-device-card,
+.device-option {
+    border: var(--app-border-width) solid var(--app-border-color);
+    border-radius: var(--app-radius);
+    background: var(--app-panel-background);
+}
+
+.management-panel,
+.card,
+.reservation-column,
+.hm-column,
+.ga-slide-panel,
+.gv-slide-panel,
+.al-slide-panel,
+.fz-slide-panel,
+.ga-device-modal-card,
+.gv-device-modal-card {
+    padding: 0.9rem;
+}
+
+.reservation-column,
+.hm-column {
+    gap: 0.75rem;
+}
+
+.management-panel h2,
+.reservation-column h3,
+.hm-column-header h3,
+.ga-panel-header h3,
+.gv-slide-panel h3,
+.al-panel-header h3,
+.fz-slide-panel h3 {
+    margin-top: 0;
+}
+
+.tab,
+.management-actions button,
+.management-item-actions button,
+#btn-reservierung-speichern,
+#btn-reservierung-abbrechen,
+.reservation-actions button,
+.ga-actions button,
+.ga-search-box button,
+.ga-icon-button,
+.ga-management-button,
+.ga-device-modal-actions button,
+.gv-actions button,
+.gv-device-modal-actions button,
+.icon-button,
+.al-actions button,
+.al-search-box button,
+.al-icon-button,
+.ao-search-box button,
+.ao-actions button,
+.ao-pagination button,
+.fz-add-button,
+.fz-actions button,
+.dm-row,
+.dm-device-actions button {
+    border: var(--app-border-width) solid var(--app-border-color);
+    border-radius: var(--app-control-radius);
+    background: var(--app-panel-background);
+    color: var(--app-border-color);
+    padding: var(--app-button-padding);
+    font-weight: 600;
+    cursor: pointer;
+}
+
+button:disabled,
+.ao-success-button:disabled,
+.ao-pagination button:disabled {
+    opacity: 0.6;
+    cursor: default;
+}
+
+.tab.active,
+.ga-secondary-button,
+.al-secondary-button,
+.fz-secondary-button,
+.secondary-button {
+    background: var(--app-active-background);
+}
+
+.danger-button {
+    background: #fff0f0;
+}
+
+.ao-success-button {
+    color: #166534;
+}
+
+.management-form-grid input,
+.management-form-grid select,
+.management-panel > input[type="search"],
+.form-input,
+.search-input,
+.hm-search-box input,
+.ga-field input,
+.ga-field select,
+.ga-search-box input,
+.ga-management-field select,
+.gv-field input,
+.dm-toolbar input,
+.dm-toolbar select,
+.al-field input,
+.al-field select,
+.al-search-box input,
+.ao-search-box input,
+.fz-search-box input,
+.fz-field input {
+    width: 100%;
+    box-sizing: border-box;
+    border: var(--app-border-width) solid var(--app-border-color);
+    border-radius: var(--app-control-radius);
+    background: var(--app-panel-background);
+    padding: var(--app-control-padding);
+}
+
+.ga-picker-field input,
+.al-picker-field input,
+.ao-search-box input,
+.ga-search-box input {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+.ga-picker-field .ga-icon-button,
+.al-picker-field .al-icon-button,
+.ao-search-box button,
+.ga-search-box button {
+    border-left: 0;
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+}
+
+.ga-search-toolbar .ga-search-box input,
+.al-search-box input,
+.fz-search-box input {
+    border-radius: var(--app-control-radius);
+}
+
+.ga-accordion-trigger,
+.gv-accordion-trigger,
+.al-accordion-trigger,
+.ao-accordion-trigger,
+.fz-accordion-trigger,
+.dm-row {
+    border: 0;
+    border-bottom: var(--app-border-width) solid var(--app-border-color);
+    background: var(--app-panel-background);
+    color: var(--app-border-color);
+    font-weight: 600;
+}
+
+.dm-row {
+    border-bottom: 0;
+}
+
+.ga-accordion-section,
+.gv-accordion-section,
+.al-accordion-section,
+.ao-accordion-section,
+.fz-accordion-section {
+    overflow: hidden;
+}
+
+.ga-item button,
+.gv-item button,
+.al-item button,
+.fz-item button,
+.list-item-button,
+.dm-device-card,
+.device-option,
+.ao-item,
+.hm-item,
+.reservation-item,
+.management-item {
+    border-radius: var(--app-control-radius);
+}
+
+.ga-item button:hover,
+.gv-item button:hover,
+.al-item button:hover,
+.fz-item button:hover,
+.list-item-button:hover,
+.active-selection {
+    background: var(--app-active-background);
+    border-color: var(--app-border-color);
+}
+
+.management-item,
+.card-item {
+    border: var(--app-border-width) solid var(--app-border-color);
+    border-radius: var(--app-control-radius);
+    background: var(--app-panel-background);
+}

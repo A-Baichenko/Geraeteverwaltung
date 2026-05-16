@@ -1,0 +1,109 @@
+package studienprojekt.geraeteverwaltung.raumverwaltung;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
+import org.springframework.context.annotation.Import;
+
+import studienprojekt.geraeteverwaltung.raumverwaltung.DBaccess.DBaccess_Raumverwaltung;
+import studienprojekt.geraeteverwaltung.raumverwaltung.DBaccess.entity.Raum;
+
+import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+@DataJpaTest
+@Import(DBaccess_Raumverwaltung.class)
+class DBaccessRaumverwaltungWeitereTests {
+
+    @Autowired
+    private DBaccess_Raumverwaltung dbaccess;
+
+    @Test
+    void legeRaumAnUndSucheFunktioniert() {
+        Raum raum = new Raum();
+        raum.setRaumNr(101);
+        raum.setGebaeude("A");
+
+        dbaccess.legeRaumAn(raum);
+
+        Raum gefunden = dbaccess.sucheRaum(101);
+
+        assertNotNull(gefunden);
+        assertEquals("A", gefunden.getGebaeude());
+    }
+
+    @Test
+    void bearbeiteRaumAktualisiertGebaeude() {
+        Raum raum = new Raum();
+        raum.setRaumNr(102);
+        raum.setGebaeude("Alt");
+
+        dbaccess.legeRaumAn(raum);
+
+        Raum bearbeitet =
+                dbaccess.bearbeiteRaum(102, "Neu");
+
+        assertEquals("Neu", bearbeitet.getGebaeude());
+    }
+
+    @Test
+    void loescheRaumEntferntRaum() {
+        Raum raum = new Raum();
+        raum.setRaumNr(103);
+        raum.setGebaeude("B");
+
+        dbaccess.legeRaumAn(raum);
+
+        boolean geloescht = dbaccess.loescheRaum(103);
+
+        assertTrue(geloescht);
+        assertNull(dbaccess.sucheRaum(103));
+    }
+
+    @Test
+    void findeNachGebaeudeFindetRaum() {
+        Raum raum = new Raum();
+        raum.setRaumNr(104);
+        raum.setGebaeude("C");
+
+        dbaccess.legeRaumAn(raum);
+
+        Raum gefunden = dbaccess.findeNachGebaeude("C");
+
+        assertNotNull(gefunden);
+        assertEquals(104, gefunden.getRaumNr());
+    }
+
+    @Test
+    void findeAlleRaeumeLiefertListe() {
+        Raum r1 = new Raum();
+        r1.setRaumNr(105);
+        r1.setGebaeude("X");
+
+        Raum r2 = new Raum();
+        r2.setRaumNr(106);
+        r2.setGebaeude("Y");
+
+        dbaccess.legeRaumAn(r1);
+        dbaccess.legeRaumAn(r2);
+
+        List<Raum> liste = dbaccess.findeAlleRaeume();
+
+        assertEquals(2, liste.size());
+    }
+
+    @Test
+    void findeRaeumeNachFilterFunktioniert() {
+        Raum raum = new Raum();
+        raum.setRaumNr(107);
+        raum.setGebaeude("Informatik");
+
+        dbaccess.legeRaumAn(raum);
+
+        List<Raum> result =
+                dbaccess.findeRaeumeNachFilter("info");
+
+        assertEquals(1, result.size());
+    }
+}

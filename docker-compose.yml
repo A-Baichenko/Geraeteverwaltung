@@ -1,0 +1,59 @@
+services:
+  app:
+    profiles: ["app"]
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "${APP_PORT:-8080}:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-local}
+      SPRING_DATASOURCE_URL: jdbc:mysql://db:${DB_PORT_CONTAINER:-3306}/${DB_NAME:-geraeteverwaltung}
+      SPRING_DATASOURCE_USERNAME: ${DB_USER:-app}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-app}
+      SPRING_FLYWAY_URL: jdbc:mysql://db:${DB_PORT_CONTAINER:-3306}/${DB_NAME:-geraeteverwaltung}
+      SPRING_FLYWAY_USER: ${DB_USER:-app}
+      SPRING_FLYWAY_PASSWORD: ${DB_PASSWORD:-app}
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./:/app
+      - maven-cache:/root/.m2
+    command: ["./mvnw", "spring-boot:run", "-Dspring-boot.run.profiles=${SPRING_PROFILES_ACTIVE:-local}"]
+
+  db:
+    image: mysql:${MYSQL_IMAGE_TAG:-8.4}
+    environment:
+      MYSQL_DATABASE: ${DB_NAME:-geraeteverwaltung}
+      MYSQL_USER: ${DB_USER:-app}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-app}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-root}
+    ports:
+      - "${DB_PORT_HOST:-3306}:${DB_PORT_CONTAINER:-3306}"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p${DB_ROOT_PASSWORD:-root}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  flyway:
+    image: flyway/flyway:${FLYWAY_IMAGE_TAG:-11}
+    profiles: ["tools"]
+    command:
+      - -url=jdbc:mysql://db:${DB_PORT_CONTAINER:-3306}/${DB_NAME:-geraeteverwaltung}
+      - -user=${DB_USER:-app}
+      - -password=${DB_PASSWORD:-app}
+      - -connectRetries=60
+      - migrate
+    volumes:
+      - ./src/main/resources/db/migration:/flyway/sql
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  mysql-data:
+  maven-cache:

@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    <link rel="stylesheet" href="/css/login.css">
+</head>
+<body>
+<div class="card">
+    <h1>Anmeldung</h1>
+
+    <form id="loginForm">
+        <div class="field">
+            <label for="username">Benutzername</label>
+            <input id="username" name="username" required>
+        </div>
+
+        <div class="field">
+            <label for="password">Passwort</label>
+            <input id="password" name="password" type="password" required>
+        </div>
+
+        <button type="submit">Einloggen</button>
+    </form>
+
+    <div id="status" class="status"></div>
+</div>
+
+<script type="module" src="/js/login.js"></script>
+</body>
+</html>
