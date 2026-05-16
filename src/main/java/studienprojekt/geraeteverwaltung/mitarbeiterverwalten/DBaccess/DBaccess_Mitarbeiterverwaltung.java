@@ -51,6 +51,21 @@ public class DBaccess_Mitarbeiterverwaltung {
             return false;
         }
 
+        Long verwendungen = entityManager.createQuery(
+                        "SELECT COUNT(m) FROM Mitarbeiter m WHERE m = :mitarbeiter AND (" +
+                                "EXISTS (SELECT g.inventarNr FROM Geraet g WHERE g.staendigerNutzer = m) " +
+                                "OR EXISTS (SELECT r.reservierungsNr FROM Reservierung r WHERE r.mitarbeiter = m) " +
+                                "OR EXISTS (SELECT a.ausleiheNr FROM Ausleihe a WHERE a.mitarbeiter = m) " +
+                                "OR EXISTS (SELECT u.id FROM AppUser u WHERE u.mitarbeiter = m)" +
+                                ")",
+                        Long.class)
+                .setParameter("mitarbeiter", gefunden)
+                .getSingleResult();
+
+        if (verwendungen > 0) {
+            throw new IllegalStateException("Mitarbeiter ist noch in Verwendung und kann nicht gelÃ¶scht werden");
+        }
+
         entityManager.remove(gefunden);
         return true;
     }

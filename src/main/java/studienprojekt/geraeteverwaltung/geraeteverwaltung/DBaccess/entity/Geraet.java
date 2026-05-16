@@ -117,6 +117,11 @@ public class Geraet {
         this.status = status;
     }
 
+    public void macheNachAufhebenFesterZuordnungVerfuegbar() {
+        this.istAusleihbar = true;
+        this.status = GeraetStatus.VERFUEGBAR;
+    }
+
     public void aktualisiereStatusNachZuweisung() {
         boolean hatFesteZuordnung = this.staendigerNutzer != null || this.standort != null;
         if (hatFesteZuordnung) {

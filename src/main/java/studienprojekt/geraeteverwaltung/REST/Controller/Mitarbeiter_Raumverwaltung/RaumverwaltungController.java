@@ -91,9 +91,13 @@ public class RaumverwaltungController {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "Nur für Raumverwalter oder Admin verfügbar"));
         }
 
-        boolean geloescht = dbaccessRaumverwaltung.loescheRaum(raumNr);
-        if (!geloescht) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "Raum nicht gefunden"));
+        try {
+            boolean geloescht = dbaccessRaumverwaltung.loescheRaum(raumNr);
+            if (!geloescht) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "Raum nicht gefunden"));
+            }
+        } catch (IllegalStateException ex) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", ex.getMessage()));
         }
 
         return ResponseEntity.ok(Map.of("message", "Raum gelöscht"));

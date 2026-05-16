@@ -108,4 +108,16 @@ class DBaccessGeraeteverwaltungWeitereTests {
 
         assertEquals(1, geraete.size());
     }
+
+    @Test
+    void aufgehobeneFesteZuordnungMachtGeraetWiederVerfuegbar() {
+        Kategorie k = dbaccess.legeKategorieAn(new Kategorie("Dockingstation"));
+        Geraetetyp t = dbaccess.legeGeraetetypAn(new Geraetetyp("Dell", "WD19", k));
+        Geraet geraet = dbaccess.legeGeraetAn(new Geraet(6, 666, LocalDate.now(), false, t));
+
+        geraet.macheNachAufhebenFesterZuordnungVerfuegbar();
+
+        assertTrue(geraet.isIstAusleihbar());
+        assertEquals(GeraetStatus.VERFUEGBAR, geraet.getStatus());
+    }
 }

@@ -709,6 +709,7 @@ export function registerGeraeteanlegenHandlers({ pageContent, getToken, redirect
             renderCreateDeviceView(root);
         } finally {
             createDeviceState.loading.action = false;
+            createDeviceState.loading.management = false;
             renderCreateDeviceView(root);
         }
     });

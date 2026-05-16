@@ -50,6 +50,17 @@ public class DBaccess_Raumverwaltung {
             return false;
         }
 
+        Long verwendungen = entityManager.createQuery(
+                        "SELECT COUNT(r) FROM Raum r WHERE r = :raum AND " +
+                                "EXISTS (SELECT g.inventarNr FROM Geraet g WHERE g.standort = r)",
+                        Long.class)
+                .setParameter("raum", gefunden)
+                .getSingleResult();
+
+        if (verwendungen > 0) {
+            throw new IllegalStateException("Raum ist noch in Verwendung und kann nicht gelÃ¶scht werden");
+        }
+
         entityManager.remove(gefunden);
         return true;
     }
