@@ -84,6 +84,13 @@ public class Reservierung {
         return reserviertesGeraet;
     }
 
+    public void setMitarbeiter(Mitarbeiter mitarbeiter) {
+        if (mitarbeiter == null) {
+            throw new IllegalArgumentException("Mitarbeiter darf nicht null sein");
+        }
+        this.mitarbeiter = mitarbeiter;
+    }
+
     public void setReserviertesGeraet(Geraet reserviertesGeraet) {
         if (reserviertesGeraet == null) {
             throw new IllegalArgumentException("Reserviertes Gerät darf nicht null sein");

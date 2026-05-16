@@ -80,6 +80,13 @@ public class Ausleihe {
         return mitarbeiter;
     }
 
+    public void setMitarbeiter(Mitarbeiter mitarbeiter) {
+        if (mitarbeiter == null) {
+            throw new IllegalArgumentException("Mitarbeiter darf nicht null sein");
+        }
+        this.mitarbeiter = mitarbeiter;
+    }
+
     public Reservierung getReservierung() {
         return reservierung;
     }

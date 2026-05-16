@@ -135,6 +135,31 @@ class DBaccessRaumverwaltungWeitereTests {
                 () -> dbaccess.loescheRaum(108)
         );
 
-        assertEquals("Raum ist noch in Verwendung und kann nicht gelÃ¶scht werden", ex.getMessage());
+        assertEquals("Raum ist noch in Verwendung und kann nicht geloescht werden", ex.getMessage());
+    }
+
+    @Test
+    void bearbeiteRaumKannRaumnummerAendernUndReferenzenBehalten() {
+        Raum raum = new Raum();
+        raum.setRaumNr(109);
+        raum.setGebaeude("Altbau");
+        dbaccess.legeRaumAn(raum);
+
+        Kategorie k = new Kategorie("Beamer");
+        em.persist(k);
+        Geraetetyp t = new Geraetetyp("Epson", "EB-L", k);
+        em.persist(t);
+        Geraet g = new Geraet(109, 190, LocalDate.now(), true, t);
+        g.setStandort(raum);
+        em.persist(g);
+
+        Raum bearbeitet = dbaccess.bearbeiteRaum(109, 209, "Neubau");
+        em.flush();
+        em.clear();
+
+        assertEquals(209, bearbeitet.getRaumNr());
+        assertNull(dbaccess.sucheRaum(109));
+        assertEquals("Neubau", dbaccess.sucheRaum(209).getGebaeude());
+        assertEquals(209, em.find(Geraet.class, 109).getStandort().getRaumNr());
     }
 }

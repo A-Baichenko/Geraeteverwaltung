@@ -6,6 +6,7 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import studienprojekt.geraeteverwaltung.geraeteverwaltung.DBaccess.entity.Geraet;
 import studienprojekt.geraeteverwaltung.raumverwaltung.DBaccess.entity.Raum;
 
 @Service
@@ -35,13 +36,40 @@ public class DBaccess_Raumverwaltung {
     }
 
     public Raum bearbeiteRaum(Integer raumNr, String gebaeude) {
-        Raum gefunden = entityManager.find(Raum.class, raumNr);
+        return bearbeiteRaum(raumNr, raumNr, gebaeude);
+    }
+
+    public Raum bearbeiteRaum(Integer bisherigeRaumNr, Integer neueRaumNr, String gebaeude) {
+        if (neueRaumNr == null || neueRaumNr <= 0) {
+            throw new IllegalArgumentException("raumNr muss > 0 sein");
+        }
+
+        Raum gefunden = entityManager.find(Raum.class, bisherigeRaumNr);
         if (gefunden == null) {
             throw new IllegalArgumentException("Raum nicht gefunden");
         }
 
-        gefunden.aendere(gebaeude);
-        return gefunden;
+        if (gefunden.getRaumNr().equals(neueRaumNr)) {
+            gefunden.aendere(gebaeude);
+            return gefunden;
+        }
+
+        if (entityManager.find(Raum.class, neueRaumNr) != null) {
+            throw new IllegalArgumentException("Raum mit raumNr existiert bereits");
+        }
+
+        Raum verschoben = new Raum(neueRaumNr, gebaeude);
+        entityManager.persist(verschoben);
+
+        entityManager.createQuery(
+                        "SELECT g FROM Geraet g WHERE g.standort = :raum",
+                        Geraet.class)
+                .setParameter("raum", gefunden)
+                .getResultList()
+                .forEach(geraet -> geraet.setStandort(verschoben));
+
+        entityManager.remove(gefunden);
+        return verschoben;
     }
 
     public boolean loescheRaum(Integer raumNr) {
@@ -58,7 +86,7 @@ public class DBaccess_Raumverwaltung {
                 .getSingleResult();
 
         if (verwendungen > 0) {
-            throw new IllegalStateException("Raum ist noch in Verwendung und kann nicht gelÃ¶scht werden");
+            throw new IllegalStateException("Raum ist noch in Verwendung und kann nicht geloescht werden");
         }
 
         entityManager.remove(gefunden);

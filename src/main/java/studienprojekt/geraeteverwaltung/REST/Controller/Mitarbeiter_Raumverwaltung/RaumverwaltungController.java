@@ -76,11 +76,15 @@ public class RaumverwaltungController {
         }
 
         try {
-            Raum bearbeitet = dbaccessRaumverwaltung.bearbeiteRaum(raumNr, payload.gebaeude());
+            Raum bearbeitet = dbaccessRaumverwaltung.bearbeiteRaum(raumNr, payload.raumNr(), payload.gebaeude());
             return ResponseEntity.ok(toResponse(bearbeitet));
         } catch (IllegalArgumentException ex) {
             String message = ex.getMessage() == null ? "Ungültige Eingabe" : ex.getMessage();
-            HttpStatus status = message.contains("nicht gefunden") ? HttpStatus.NOT_FOUND : HttpStatus.BAD_REQUEST;
+            HttpStatus status = message.contains("nicht gefunden")
+                    ? HttpStatus.NOT_FOUND
+                    : message.contains("existiert bereits")
+                    ? HttpStatus.CONFLICT
+                    : HttpStatus.BAD_REQUEST;
             return ResponseEntity.status(status).body(Map.of("error", message));
         }
     }
@@ -135,6 +139,6 @@ public class RaumverwaltungController {
     public record RaumRequest(Integer raumNr, String gebaeude) {
     }
 
-    public record RaumUpdateRequest(String gebaeude) {
+    public record RaumUpdateRequest(Integer raumNr, String gebaeude) {
     }
 }

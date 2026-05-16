@@ -84,6 +84,7 @@ public class MitarbeiterverwaltungController {
         try {
             Mitarbeiter bearbeitet = dbaccessMitarbeiterverwaltung.bearbeiteMitarbeiter(
                     personalNr,
+                    payload.personalNr(),
                     payload.vorname(),
                     payload.nachname(),
                     parseAnrede(payload.anrede())
@@ -91,7 +92,11 @@ public class MitarbeiterverwaltungController {
             return ResponseEntity.ok(toResponse(bearbeitet));
         } catch (IllegalArgumentException ex) {
             String message = ex.getMessage() == null ? "Ungültige Eingabe" : ex.getMessage();
-            HttpStatus status = message.contains("nicht gefunden") ? HttpStatus.NOT_FOUND : HttpStatus.BAD_REQUEST;
+            HttpStatus status = message.contains("nicht gefunden")
+                    ? HttpStatus.NOT_FOUND
+                    : message.contains("existiert bereits")
+                    ? HttpStatus.CONFLICT
+                    : HttpStatus.BAD_REQUEST;
             return ResponseEntity.status(status).body(Map.of("error", message));
         }
     }
@@ -161,6 +166,6 @@ public class MitarbeiterverwaltungController {
     public record MitarbeiterRequest(Integer personalNr, String vorname, String nachname, String anrede) {
     }
 
-    public record MitarbeiterUpdateRequest(String vorname, String nachname, String anrede) {
+    public record MitarbeiterUpdateRequest(Integer personalNr, String vorname, String nachname, String anrede) {
     }
 }
