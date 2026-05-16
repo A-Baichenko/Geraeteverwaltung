@@ -5,9 +5,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.context.annotation.Import;
 
+import jakarta.persistence.EntityManager;
+import studienprojekt.geraeteverwaltung.geraeteverwaltung.DBaccess.entity.Geraet;
+import studienprojekt.geraeteverwaltung.geraeteverwaltung.DBaccess.entity.Geraetetyp;
+import studienprojekt.geraeteverwaltung.geraeteverwaltung.DBaccess.entity.Kategorie;
 import studienprojekt.geraeteverwaltung.raumverwaltung.DBaccess.DBaccess_Raumverwaltung;
 import studienprojekt.geraeteverwaltung.raumverwaltung.DBaccess.entity.Raum;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -18,6 +23,9 @@ class DBaccessRaumverwaltungWeitereTests {
 
     @Autowired
     private DBaccess_Raumverwaltung dbaccess;
+
+    @Autowired
+    private EntityManager em;
 
     @Test
     void legeRaumAnUndSucheFunktioniert() {
@@ -105,5 +113,28 @@ class DBaccessRaumverwaltungWeitereTests {
                 dbaccess.findeRaeumeNachFilter("info");
 
         assertEquals(1, result.size());
+    }
+
+    @Test
+    void loescheRaumLehntVerwendetenRaumAb() {
+        Raum raum = new Raum();
+        raum.setRaumNr(108);
+        raum.setGebaeude("Labor");
+        dbaccess.legeRaumAn(raum);
+
+        Kategorie k = new Kategorie("Monitor");
+        em.persist(k);
+        Geraetetyp t = new Geraetetyp("Dell", "P2425", k);
+        em.persist(t);
+        Geraet g = new Geraet(108, 180, LocalDate.now(), true, t);
+        g.setStandort(raum);
+        em.persist(g);
+
+        IllegalStateException ex = assertThrows(
+                IllegalStateException.class,
+                () -> dbaccess.loescheRaum(108)
+        );
+
+        assertEquals("Raum ist noch in Verwendung und kann nicht gelÃ¶scht werden", ex.getMessage());
     }
 }

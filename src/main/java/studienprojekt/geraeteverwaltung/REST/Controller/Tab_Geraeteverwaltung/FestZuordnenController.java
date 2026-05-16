@@ -352,7 +352,7 @@ public class FestZuordnenController {
 
         geraet.setStaendigerNutzer(null);
         geraet.setStandort(null);
-        geraet.aktualisiereStatusNachZuweisung();
+        geraet.macheNachAufhebenFesterZuordnungVerfuegbar();
 
         return ResponseEntity.ok(Map.of("message", "Feste Zuordnung aufgehoben"));
     }

@@ -5,10 +5,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.context.annotation.Import;
 
+import jakarta.persistence.EntityManager;
+import studienprojekt.geraeteverwaltung.geraeteverwaltung.DBaccess.entity.Geraet;
+import studienprojekt.geraeteverwaltung.geraeteverwaltung.DBaccess.entity.Geraetetyp;
+import studienprojekt.geraeteverwaltung.geraeteverwaltung.DBaccess.entity.Kategorie;
 import studienprojekt.geraeteverwaltung.mitarbeiterverwalten.DBaccess.DBaccess_Mitarbeiterverwaltung;
 import studienprojekt.geraeteverwaltung.mitarbeiterverwalten.DBaccess.entity.Anrede;
 import studienprojekt.geraeteverwaltung.mitarbeiterverwalten.DBaccess.entity.Mitarbeiter;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -19,6 +24,9 @@ class DBaccessMitarbeiterverwaltungWeitereTests {
 
     @Autowired
     private DBaccess_Mitarbeiterverwaltung dbaccess;
+
+    @Autowired
+    private EntityManager em;
 
     @Test
     void legeMitarbeiterAnUndSucheFunktioniert() {
@@ -121,5 +129,30 @@ class DBaccessMitarbeiterverwaltungWeitereTests {
                 dbaccess.findeMitarbeiterNachFilter("peter");
 
         assertEquals(1, result.size());
+    }
+
+    @Test
+    void loescheMitarbeiterLehntVerwendetenMitarbeiterAb() {
+        Mitarbeiter m = new Mitarbeiter();
+        m.setPersonalNr(8);
+        m.setVorname("Ben");
+        m.setNachname("Belegt");
+        m.setAnrede(Anrede.HERR);
+        dbaccess.legeMitarbeiterAn(m);
+
+        Kategorie k = new Kategorie("Notebook");
+        em.persist(k);
+        Geraetetyp t = new Geraetetyp("Lenovo", "ThinkPad", k);
+        em.persist(t);
+        Geraet g = new Geraet(8, 808, LocalDate.now(), true, t);
+        g.setStaendigerNutzer(m);
+        em.persist(g);
+
+        IllegalStateException ex = assertThrows(
+                IllegalStateException.class,
+                () -> dbaccess.loescheMitarbeiter(8)
+        );
+
+        assertEquals("Mitarbeiter ist noch in Verwendung und kann nicht gelÃ¶scht werden", ex.getMessage());
     }
 }
