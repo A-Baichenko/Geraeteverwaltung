@@ -109,13 +109,23 @@ public class DBaccess_Mitarbeiterverwaltung {
             return false;
         }
 
-        Long verwendungen = entityManager.createQuery(
-                        "SELECT COUNT(m) FROM Mitarbeiter m WHERE m = :mitarbeiter AND (" +
-                                "EXISTS (SELECT g.inventarNr FROM Geraet g WHERE g.staendigerNutzer = m) " +
-                                "OR EXISTS (SELECT r.reservierungsNr FROM Reservierung r WHERE r.mitarbeiter = m) " +
-                                "OR EXISTS (SELECT a.ausleiheNr FROM Ausleihe a WHERE a.mitarbeiter = m) " +
-                                "OR EXISTS (SELECT u.id FROM AppUser u WHERE u.mitarbeiter = m)" +
-                                ")",
+        long verwendungen = entityManager.createQuery(
+                        "SELECT COUNT(g) FROM Geraet g WHERE g.staendigerNutzer = :mitarbeiter",
+                        Long.class)
+                .setParameter("mitarbeiter", gefunden)
+                .getSingleResult()
+                + entityManager.createQuery(
+                        "SELECT COUNT(r) FROM Reservierung r WHERE r.mitarbeiter = :mitarbeiter",
+                        Long.class)
+                .setParameter("mitarbeiter", gefunden)
+                .getSingleResult()
+                + entityManager.createQuery(
+                        "SELECT COUNT(a) FROM Ausleihe a WHERE a.mitarbeiter = :mitarbeiter",
+                        Long.class)
+                .setParameter("mitarbeiter", gefunden)
+                .getSingleResult()
+                + entityManager.createQuery(
+                        "SELECT COUNT(u) FROM AppUser u WHERE u.mitarbeiter = :mitarbeiter",
                         Long.class)
                 .setParameter("mitarbeiter", gefunden)
                 .getSingleResult();
