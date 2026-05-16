@@ -40,7 +40,7 @@ async function speichereRaum(token) {
                 'Content-Type': 'application/json',
                 ...authHeaders(token)
             },
-            body: JSON.stringify(istBearbeitung ? { gebaeude: payload.gebaeude } : payload)
+            body: JSON.stringify(istBearbeitung ? { gebaeude: payload.gebaeude, raumNr: payload.raumNr } : payload)
         }
     );
 
@@ -93,7 +93,7 @@ function fillForm(item) {
     }
     if (raumNrInput) {
         raumNrInput.value = String(item.raumNr);
-        raumNrInput.readOnly = true;
+        raumNrInput.readOnly = false;
     }
     if (hint) {
         hint.textContent = `Bearbeiten aktiv für Raum ${item.raumNr}.`;

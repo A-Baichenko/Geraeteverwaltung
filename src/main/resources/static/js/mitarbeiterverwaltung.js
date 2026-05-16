@@ -45,7 +45,7 @@ async function speichereMitarbeiter(token) {
                 ...authHeaders(token)
             },
             body: JSON.stringify(istBearbeitung
-                ? { vorname: payload.vorname, nachname: payload.nachname, anrede: payload.anrede }
+                ? { personalNr: payload.personalNr, vorname: payload.vorname, nachname: payload.nachname, anrede: payload.anrede }
                 : payload)
         }
     );
@@ -105,7 +105,7 @@ function fillForm(item) {
 
     if (personalNrInput) {
         personalNrInput.value = String(item.personalNr);
-        personalNrInput.readOnly = true;
+        personalNrInput.readOnly = false;
     }
     if (vornameInput) {
         vornameInput.value = item.vorname || '';

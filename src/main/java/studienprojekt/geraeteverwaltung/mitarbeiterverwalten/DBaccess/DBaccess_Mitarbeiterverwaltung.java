@@ -6,6 +6,10 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import studienprojekt.geraeteverwaltung.geraeteverwaltung.DBaccess.entity.Ausleihe;
+import studienprojekt.geraeteverwaltung.geraeteverwaltung.DBaccess.entity.Geraet;
+import studienprojekt.geraeteverwaltung.geraeteverwaltung.DBaccess.entity.Reservierung;
+import studienprojekt.geraeteverwaltung.mitarbeiterverwalten.DBaccess.entity.AppUser;
 import studienprojekt.geraeteverwaltung.mitarbeiterverwalten.DBaccess.entity.Anrede;
 import studienprojekt.geraeteverwaltung.mitarbeiterverwalten.DBaccess.entity.Mitarbeiter;
 
@@ -36,13 +40,67 @@ public class DBaccess_Mitarbeiterverwaltung {
     }
 
     public Mitarbeiter bearbeiteMitarbeiter(Integer personalNr, String vorname, String nachname, Anrede anrede) {
-        Mitarbeiter gefunden = entityManager.find(Mitarbeiter.class, personalNr);
+        return bearbeiteMitarbeiter(personalNr, personalNr, vorname, nachname, anrede);
+    }
+
+    public Mitarbeiter bearbeiteMitarbeiter(
+            Integer bisherigePersonalNr,
+            Integer neuePersonalNr,
+            String vorname,
+            String nachname,
+            Anrede anrede) {
+
+        if (neuePersonalNr == null || neuePersonalNr <= 0) {
+            throw new IllegalArgumentException("personalNr muss > 0 sein");
+        }
+
+        Mitarbeiter gefunden = entityManager.find(Mitarbeiter.class, bisherigePersonalNr);
         if (gefunden == null) {
             throw new IllegalArgumentException("Mitarbeiter nicht gefunden");
         }
 
-        gefunden.aendere(vorname, nachname, anrede);
-        return gefunden;
+        if (gefunden.getPersonalNr().equals(neuePersonalNr)) {
+            gefunden.aendere(vorname, nachname, anrede);
+            return gefunden;
+        }
+
+        if (entityManager.find(Mitarbeiter.class, neuePersonalNr) != null) {
+            throw new IllegalArgumentException("Mitarbeiter mit personalNr existiert bereits");
+        }
+
+        Mitarbeiter verschoben = new Mitarbeiter(neuePersonalNr, vorname, nachname, anrede);
+        entityManager.persist(verschoben);
+
+        entityManager.createQuery(
+                        "SELECT g FROM Geraet g WHERE g.staendigerNutzer = :mitarbeiter",
+                        Geraet.class)
+                .setParameter("mitarbeiter", gefunden)
+                .getResultList()
+                .forEach(geraet -> geraet.setStaendigerNutzer(verschoben));
+
+        entityManager.createQuery(
+                        "SELECT r FROM Reservierung r WHERE r.mitarbeiter = :mitarbeiter",
+                        Reservierung.class)
+                .setParameter("mitarbeiter", gefunden)
+                .getResultList()
+                .forEach(reservierung -> reservierung.setMitarbeiter(verschoben));
+
+        entityManager.createQuery(
+                        "SELECT a FROM Ausleihe a WHERE a.mitarbeiter = :mitarbeiter",
+                        Ausleihe.class)
+                .setParameter("mitarbeiter", gefunden)
+                .getResultList()
+                .forEach(ausleihe -> ausleihe.setMitarbeiter(verschoben));
+
+        entityManager.createQuery(
+                        "SELECT u FROM AppUser u WHERE u.mitarbeiter = :mitarbeiter",
+                        AppUser.class)
+                .setParameter("mitarbeiter", gefunden)
+                .getResultList()
+                .forEach(appUser -> appUser.setMitarbeiter(verschoben));
+
+        entityManager.remove(gefunden);
+        return verschoben;
     }
 
     public boolean loescheMitarbeiter(Integer personalNr) {
@@ -63,7 +121,7 @@ public class DBaccess_Mitarbeiterverwaltung {
                 .getSingleResult();
 
         if (verwendungen > 0) {
-            throw new IllegalStateException("Mitarbeiter ist noch in Verwendung und kann nicht gelÃ¶scht werden");
+            throw new IllegalStateException("Mitarbeiter ist noch in Verwendung und kann nicht geloescht werden");
         }
 
         entityManager.remove(gefunden);

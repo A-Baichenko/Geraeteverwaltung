@@ -153,6 +153,33 @@ class DBaccessMitarbeiterverwaltungWeitereTests {
                 () -> dbaccess.loescheMitarbeiter(8)
         );
 
-        assertEquals("Mitarbeiter ist noch in Verwendung und kann nicht gelÃ¶scht werden", ex.getMessage());
+        assertEquals("Mitarbeiter ist noch in Verwendung und kann nicht geloescht werden", ex.getMessage());
+    }
+
+    @Test
+    void bearbeiteMitarbeiterKannPersonalnummerAendernUndReferenzenBehalten() {
+        Mitarbeiter m = new Mitarbeiter();
+        m.setPersonalNr(9);
+        m.setVorname("Nina");
+        m.setNachname("Alt");
+        m.setAnrede(Anrede.FRAU);
+        dbaccess.legeMitarbeiterAn(m);
+
+        Kategorie k = new Kategorie("Tablet");
+        em.persist(k);
+        Geraetetyp t = new Geraetetyp("Apple", "iPad", k);
+        em.persist(t);
+        Geraet g = new Geraet(9, 909, LocalDate.now(), true, t);
+        g.setStaendigerNutzer(m);
+        em.persist(g);
+
+        Mitarbeiter bearbeitet = dbaccess.bearbeiteMitarbeiter(9, 99, "Nina", "Neu", Anrede.DIVERS);
+        em.flush();
+        em.clear();
+
+        assertEquals(99, bearbeitet.getPersonalNr());
+        assertNull(dbaccess.sucheMitarbeiter(9));
+        assertEquals("Neu", dbaccess.sucheMitarbeiter(99).getNachname());
+        assertEquals(99, em.find(Geraet.class, 9).getStaendigerNutzer().getPersonalNr());
     }
 }
